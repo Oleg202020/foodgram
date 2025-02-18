@@ -41,7 +41,7 @@ const About = ({ updateOrders, orders }) => {
               Код проекта находится тут - <a href="#" className={styles.textLink}>Github</a>
             </p>
             <p className={styles.textItem}>
-              Автор проекта: <a href="#" className={styles.textLink}>Имя Автора</a>
+              Автор проекта: <a href="#" className={styles.textLink}>Ларионов Олег</a>
             </p>
           </div>
         </aside>
