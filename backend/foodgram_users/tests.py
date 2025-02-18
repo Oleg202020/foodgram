@@ -106,7 +106,7 @@ class UsersAPITestCase(TestCase):
         /api/users/set_password/   POST.
         Ожидается:
         - Код ответа 204 (No Content) при успешном изменении пароля.
-        - Успешная аутентификация со старым паролем невозможна, 
+        - Успешная аутентификация со старым паролем невозможна,
         с новым — возможна.
         """
         data = {
@@ -116,7 +116,8 @@ class UsersAPITestCase(TestCase):
         response = self.auth_client.post('/api/users/set_password/', data=data)
         self.assertEqual(response.status_code, HTTPStatus.NO_CONTENT)
         self.assertFalse(
-            self.auth_client.login(username='testuser', password='testpassword')
+            self.auth_client.login(username='testuser',
+                                   password='testpassword')
         )
         self.assertTrue(
             self.auth_client.login(username='testuser',
