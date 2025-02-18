@@ -1,35 +1,23 @@
 import random
 import string
 
+from core_foodgram.filters import IngredientFilter, TagFavCartFilter
+from core_foodgram.pagination import CustomPagination
+from core_foodgram.permissions import IsOwnerOrAdmin
 from django.db.models import Sum
-from django_filters.rest_framework import DjangoFilterBackend
-from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
-
-from rest_framework import status, generics, viewsets
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from foodgram_api.serializers import (CreateRecipeSerializer,
+                                      IngredientSerializer,
+                                      ListRecipeSerializer, RecipeSerializer,
+                                      TagSerializer)
+from foodgram_app.models import (Favorite, Ingredient, IngredientRecipe,
+                                 Recipe, ShoppingCart, Tag)
+from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-
-from core_foodgram.filters import TagFavCartFilter, IngredientFilter
-from core_foodgram.pagination import CustomPagination
-from core_foodgram.permissions import IsOwnerOrAdmin
-
-from foodgram_app.models import (
-    Ingredient,
-    IngredientRecipe,
-    Favorite,
-    Recipe,
-    ShoppingCart,
-    Tag
-)
-
-from foodgram_api.serializers import (
-    CreateRecipeSerializer,
-    IngredientSerializer,
-    ListRecipeSerializer,
-    RecipeSerializer,
-    TagSerializer)
 
 """
 Cписок тегов                        api/tags/                           GET

@@ -1,15 +1,15 @@
+from core_foodgram.pagination import CustomPagination
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from djoser.serializers import SetPasswordSerializer
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from core_foodgram.pagination import CustomPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Follow
-from .serializers import FollowSerializer, CorreсtAndSeeUserSerializer, \
-    RegistrationUserSerializer
+from .serializers import (CorreсtAndSeeUserSerializer, FollowSerializer,
+                          RegistrationUserSerializer)
 
 """
 Список пользователей                api/users/                 GET

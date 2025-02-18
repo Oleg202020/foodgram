@@ -1,7 +1,6 @@
 import csv
 
 from django.core.management import BaseCommand
-
 from foodgram_app.models import Tag
 
 

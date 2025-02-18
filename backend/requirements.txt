@@ -9,3 +9,5 @@ psycopg2-binary
 pyparsing==3.0.9
 python-dotenv==0.19.2
 sqlparse==0.4.3
+flake8==6.0.0
+flake8-isort==6.0.0

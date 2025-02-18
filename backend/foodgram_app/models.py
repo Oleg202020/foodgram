@@ -1,11 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.urls import reverse
-
 
 User = get_user_model()
-
 
 MIN_AMOUNT = 1        # г,мл, кг, капля (дробных значений не предусмотрено?)
 MIN_COOKING_TIME = 1  # минута
