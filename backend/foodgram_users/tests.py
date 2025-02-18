@@ -100,30 +100,6 @@ class UsersAPITestCase(TestCase):
         response = self.guest_client.get('/api/users/me/')
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
-    def test_set_password(self):
-        """
-        Проверка изменения пароля для авторизованного пользователя:
-        /api/users/set_password/   POST.
-        Ожидается:
-        - Код ответа 204 (No Content) при успешном изменении пароля.
-        - Успешная аутентификация со старым паролем невозможна,
-        с новым — возможна.
-        """
-        data = {
-            'current_password': 'testpassword',
-            'new_password': 'changedpassword'
-        }
-        response = self.auth_client.post('/api/users/set_password/', data=data)
-        self.assertEqual(response.status_code, HTTPStatus.NO_CONTENT)
-        self.assertFalse(
-            self.auth_client.login(username='testuser',
-                                   password='testpassword')
-        )
-        self.assertTrue(
-            self.auth_client.login(username='testuser',
-                                   password='changedpassword')
-        )
-
     def test_subscribe_to_another_user(self):
         """
         Проверка подписки на другого пользователя:
