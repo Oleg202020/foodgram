@@ -13,7 +13,6 @@ from foodgram_app.models import (Favorite, Ingredient, IngredientRecipe,
                                  Recipe, ShoppingCart, Tag)
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
