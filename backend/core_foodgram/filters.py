@@ -10,8 +10,7 @@ User = get_user_model()
 class IngredientFilter(FilterSet):
     """Фильтрация ингредиентов по названию."""
     name = filters.CharFilter(
-        field_name='name',
-    )
+        field_name='name',)
 
     class Meta:
         model = Ingredient

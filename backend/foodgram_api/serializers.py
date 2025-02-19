@@ -6,13 +6,15 @@
 все сериализаторы с пользователем содержатся в foodgram_users:
 работа с аватаром, редактирование пароля, подписки на других пользователей
 """
+import random
+import string
+
 from django.contrib.auth import get_user_model
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
-
 from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
 from foodgram_users.serializers import CorreсtAndSeeUserSerializer
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 MIN_AMOUNT = 1        # г,мл, кг, капля (дробных значений не предусмотрено?)
 
@@ -121,6 +123,13 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             ) for ingredient in ingredients]
         )
 
+    def generate_short_code(self, length=3):
+        """
+        Генерирует случайную строку из символов [a-zA-Z0-9].
+        """
+        letters_digits = string.ascii_letters + string.digits
+        return ''.join(random.choice(letters_digits) for _ in range(length))
+
     def validate(self, data):
         """
         Валидация полей (проверка ingredients, tags).
@@ -170,10 +179,10 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         """Создание нового рецепта с привязкой тегов и ингредиентов."""
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(
-            author=self.context['request'].user,
-            **validated_data
-        )
+        short_link = self.generate_short_code()
+        recipe = Recipe.objects.create(author=self.context['request'].user,
+                                       short_link=short_link,
+                                       **validated_data)
         self.tags_and_ingredients_set(recipe, tags, ingredients)
         return recipe
 
@@ -217,7 +226,6 @@ class RecipeSerializer(serializers.ModelSerializer):
                                              source='ingredient_recipe')
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    # short_link = serializers.CharField(read_only=True)
 
     class Meta:
         model = Recipe

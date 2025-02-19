@@ -1,22 +1,23 @@
-from django.db.models import Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status, viewsets
-from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
+import random
+import string
 
 from core_foodgram.filters import IngredientFilter, TagFavCartFilter
 from core_foodgram.pagination import CustomPagination
 from core_foodgram.permissions import IsOwnerOrAdmin
+from django.db.models import Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from foodgram_api.serializers import (CreateRecipeSerializer,
                                       IngredientSerializer,
                                       ListRecipeSerializer, RecipeSerializer,
                                       TagSerializer)
 from foodgram_app.models import (Favorite, Ingredient, IngredientRecipe,
                                  Recipe, ShoppingCart, Tag)
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
 """
 Cписок тегов                        api/tags/                           GET
@@ -38,6 +39,14 @@ Cписок тегов                        api/tags/                         
 Добавить рецепт в избранное         api/recipes/{id}/favorite/          POST
 Удалить рецепт из избранного        api/recipes/{id}/favorite/          DELETE
 """
+
+
+def generate_short_code(length=3):
+    """
+    Генерирует случайную строку из символов [a-zA-Z0-9].
+    """
+    letters_digits = string.ascii_letters + string.digits
+    return ''.join(random.choice(letters_digits) for _ in range(length))
 
 
 class RecipeShortLinkView(generics.RetrieveAPIView):
@@ -73,9 +82,9 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
-    filter_backends = (DjangoFilterBackend, SearchFilter)
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
-    search_fields = ['^name']
+    search_fields = ['name']
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -105,9 +114,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Доступ /api/recipes/{id}/get-link/      GET
         """
         recipe = get_object_or_404(Recipe, pk=pk)
-        short_domain = "https://foodgramlar.viewdns.net/s"
-        full_short_url = f"{short_domain}/{recipe.short_link}"
-        return Response({'short-link': full_short_url},
+        if not recipe.short_link:
+            while True:
+                short_code = generate_short_code(3)
+                if not Recipe.objects.filter(short_link=short_code).exists():
+                    recipe.short_link = short_code
+                    recipe.save()
+                    break
+        return Response({'short-link': recipe.short_link},
                         status=status.HTTP_200_OK)
 
     @action(
