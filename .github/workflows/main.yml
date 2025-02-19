@@ -132,7 +132,7 @@ jobs:
           if [ -f /home/yc-user/foodgram/docker-compose.production.yml ]; then
             sudo rm -f /home/yc-user/foodgram/docker-compose.production.yml
           fi
-    - name: Copy docker-compose.yml via ssh
+    - name: Copy docker-compose.yml to /tmp
       uses: appleboy/scp-action@master      
       with:
         host: ${{ secrets.HOST }}
@@ -140,10 +140,24 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         source: "docker-compose.production.yml"
-        target: "/home/yc-user/foodgram"
+        target: "/tmp"
         strip_components: 0
         overwrite: true
         rm: false
+    - name: Move file to final location
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        script: |
+          if [ -f /tmp/docker-compose.production.yml ]; then
+            sudo mv /tmp/docker-compose.production.yml /home/yc-user/foodgram/docker-compose.production.yml
+          else
+            echo "Файл не найден в /tmp!"
+            exit 1
+          fi
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
       with:
