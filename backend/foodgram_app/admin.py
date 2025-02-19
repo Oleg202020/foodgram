@@ -11,6 +11,7 @@ class IngredientRecipeInline(admin.TabularInline):
     model = models.IngredientRecipe
     extra = 1
 
+
 @admin.register(models.Tag)
 class TagAdmin(admin.ModelAdmin):
     """Админ-модель для тегов."""

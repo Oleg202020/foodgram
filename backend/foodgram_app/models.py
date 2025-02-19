@@ -119,7 +119,7 @@ class Recipe(models.Model):
         if not self.short_link:
             self.short_link = generate_unique_short_code(3)
         super().save(*args, **kwargs)
-    
+
     def __str__(self):
         return self.name
 
