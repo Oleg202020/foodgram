@@ -21,8 +21,8 @@ class UsersAPITestCase(TestCase):
         Инициализация тестовых данных и клиентов для каждого теста.
 
         Создаются:
-        - Гость (неавторизованный клиент) — self.guest_client
-        - Авторизованный клиент — self.auth_client
+        - Неавторизованный пользователь — self.guest_client
+        - Авторизованный пользователь — self.auth_client
         - Пользователь (self.user)
         """
         self.guest_client = Client()

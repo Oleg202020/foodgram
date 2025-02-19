@@ -17,6 +17,6 @@ class Command(BaseCommand):
                     slug=row[1].strip()
                 )
         self.stdout.write(
-            self.style.SUCCESS('Ингредиентов загружены.'))
+            self.style.SUCCESS('Теги загружены.'))
 
 # python manage.py load_tegs

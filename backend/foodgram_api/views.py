@@ -1,5 +1,4 @@
-import random
-import string
+from rest_framework.filters import SearchFilter
 
 from core_foodgram.filters import IngredientFilter, TagFavCartFilter
 from core_foodgram.pagination import CustomPagination
@@ -41,14 +40,6 @@ Cписок тегов                        api/tags/                         
 """
 
 
-def generate_short_code(length=3):
-    """
-    Генерирует случайную строку из символов [a-zA-Z0-9].
-    """
-    letters_digits = string.ascii_letters + string.digits
-    return ''.join(random.choice(letters_digits) for _ in range(length))
-
-
 class RecipeShortLinkView(generics.RetrieveAPIView):
     """
     Позволяет получить рецепт по короткой ссылке `/s/<short_link>/`.
@@ -82,9 +73,9 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_class = IngredientFilter
-    search_fields = ['name']
+    search_fields = ['^name']
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -114,14 +105,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Доступ /api/recipes/{id}/get-link/      GET
         """
         recipe = get_object_or_404(Recipe, pk=pk)
-        if not recipe.short_link:
-            while True:
-                short_code = generate_short_code(3)
-                if not Recipe.objects.filter(short_link=short_code).exists():
-                    recipe.short_link = short_code
-                    recipe.save()
-                    break
-        return Response({'short-link': recipe.short_link},
+        short_domain = "https://foodgramlar.viewdns.net/s"
+        full_short_url = f"{short_domain}/{recipe.short_link}"
+        return Response({'short-link': full_short_url},
                         status=status.HTTP_200_OK)
 
     @action(
