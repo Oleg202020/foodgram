@@ -10,7 +10,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['158.160.12.176,', '127.0.0.1', 'localhost', 'foodgramlar.viewdns.net']
+ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'foodgramlar.viewdns.net']
 
 
 # Application definition
