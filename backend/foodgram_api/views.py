@@ -3,7 +3,7 @@ from core_foodgram.pagination import CustomPagination
 from core_foodgram.permissions import IsOwnerOrAdmin
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django_filters.rest_framework import DjangoFilterBackend
 from foodgram_api.serializers import (CreateRecipeSerializer,
                                       IngredientSerializer,
@@ -13,6 +13,7 @@ from foodgram_app.models import (Favorite, Ingredient, IngredientRecipe,
                                  Recipe, ShoppingCart, Tag)
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -38,15 +39,15 @@ Cписок тегов                        api/tags/                         
 """
 
 
-class RecipeShortLinkView(generics.RetrieveAPIView):
+class RecipeShortLinkView(generics.GenericAPIView):
     """
     Позволяет получить рецепт по короткой ссылке `/s/<short_link>/`.
-    Не генерирует ссылку, только возвращает рецепт.
+    Редирект на полноценную страницу рецепта во фронтенде.
     """
-    queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
-    permission_classes = [AllowAny]
-    lookup_field = 'short_link'
+    def get(self, request, short_link):
+        recipe = get_object_or_404(Recipe, short_link=short_link)
+        frontend_url = f"/recipes/{recipe.id}/"
+        return redirect(frontend_url)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -71,9 +72,9 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = None
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_class = IngredientFilter
-    search_fields = ['name']
+    search_fields = ['^name']
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
