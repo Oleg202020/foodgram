@@ -11,7 +11,6 @@ class IngredientFilter(FilterSet):
     """Фильтрация ингредиентов по названию."""
     name = filters.CharFilter(
         field_name='name',
-        lookup_expr='icontains',
     )
 
     class Meta:
