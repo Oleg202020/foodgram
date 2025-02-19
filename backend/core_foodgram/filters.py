@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django_filters import FilterSet
 from django_filters.rest_framework import filters
-
 from foodgram_app.models import Ingredient, Recipe, Tag
 
 User = get_user_model()
