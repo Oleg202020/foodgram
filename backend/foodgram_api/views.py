@@ -1,6 +1,3 @@
-import random
-import string
-
 from core_foodgram.filters import IngredientFilter, TagFavCartFilter
 from core_foodgram.pagination import CustomPagination
 from core_foodgram.permissions import IsOwnerOrAdmin
@@ -39,14 +36,6 @@ Cписок тегов                        api/tags/                         
 Добавить рецепт в избранное         api/recipes/{id}/favorite/          POST
 Удалить рецепт из избранного        api/recipes/{id}/favorite/          DELETE
 """
-
-
-def generate_short_code(length=3):
-    """
-    Генерирует случайную строку из символов [a-zA-Z0-9].
-    """
-    letters_digits = string.ascii_letters + string.digits
-    return ''.join(random.choice(letters_digits) for _ in range(length))
 
 
 class RecipeShortLinkView(generics.RetrieveAPIView):
@@ -114,14 +103,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Доступ /api/recipes/{id}/get-link/      GET
         """
         recipe = get_object_or_404(Recipe, pk=pk)
-        if not recipe.short_link:
-            while True:
-                short_code = generate_short_code(3)
-                if not Recipe.objects.filter(short_link=short_code).exists():
-                    recipe.short_link = short_code
-                    recipe.save()
-                    break
-        return Response({'short-link': recipe.short_link},
+        short_domain = "https://foodgramlar.viewdns.net/s"
+        short_url = f"{short_domain}/{recipe.short_link}"
+        return Response({'short-link': short_url},
                         status=status.HTTP_200_OK)
 
     @action(

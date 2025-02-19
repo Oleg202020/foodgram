@@ -123,13 +123,6 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             ) for ingredient in ingredients]
         )
 
-    def generate_short_code(self, length=3):
-        """
-        Генерирует случайную строку из символов [a-zA-Z0-9].
-        """
-        letters_digits = string.ascii_letters + string.digits
-        return ''.join(random.choice(letters_digits) for _ in range(length))
-
     def validate(self, data):
         """
         Валидация полей (проверка ingredients, tags).
@@ -179,10 +172,10 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         """Создание нового рецепта с привязкой тегов и ингредиентов."""
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        short_link = self.generate_short_code()
-        recipe = Recipe.objects.create(author=self.context['request'].user,
-                                       short_link=short_link,
-                                       **validated_data)
+        recipe = Recipe.objects.create(
+            author=self.context['request'].user,
+            **validated_data
+        )
         self.tags_and_ingredients_set(recipe, tags, ingredients)
         return recipe
 

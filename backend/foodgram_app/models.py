@@ -1,3 +1,5 @@
+import random
+import string
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -6,6 +8,20 @@ User = get_user_model()
 
 MIN_AMOUNT = 1        # г,мл, кг, капля (дробных значений не предусмотрено?)
 MIN_COOKING_TIME = 1  # минута
+
+
+def generate_short_code(length=3):
+    """Генерирует случайную строку из символов [a-zA-Z0-9]."""
+    letters_digits = string.ascii_letters + string.digits
+    return ''.join(random.choice(letters_digits) for _ in range(length))
+
+
+def generate_unique_short_code(length=3):
+    """Генерирует короткую ссылку, уникальную в Recipe."""
+    while True:
+        code = generate_short_code(length)
+        if not Recipe.objects.filter(short_link=code).exists():
+            return code
 
 
 class Tag(models.Model):
@@ -89,6 +105,16 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ['-pub_date']
+
+    def save(self, *args, **kwargs):
+        """
+        Переопределяет метод сохранения,
+        если поле short_link пустое (blank), генерируем
+        новую уникальную короткую ссылку.
+        """
+        if not self.short_link:
+            self.short_link = generate_unique_short_code(3)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
