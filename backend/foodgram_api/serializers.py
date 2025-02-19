@@ -11,10 +11,11 @@ import string
 
 from django.contrib.auth import get_user_model
 from drf_extra_fields.fields import Base64ImageField
-from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
-from foodgram_users.serializers import CorreсtAndSeeUserSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
+from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
+from foodgram_users.serializers import CorreсtAndSeeUserSerializer
 
 MIN_AMOUNT = 1        # г,мл, кг, капля (дробных значений не предусмотрено?)
 
