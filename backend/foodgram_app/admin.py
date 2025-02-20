@@ -30,7 +30,7 @@ class IngredientAdmin(admin.ModelAdmin):
 @admin.register(models.Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ('name', 'author', 'favorited_counts')
-    search_fields = ('name', 'author')
+    search_fields = ('name', 'author__username')
     list_filter = ('tags',)
     filter_horizontal = ('tags',)
     inlines = [IngredientRecipeInline]

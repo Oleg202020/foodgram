@@ -36,7 +36,7 @@ User = get_user_model()
 class UserViewSet(viewsets.ModelViewSet):
     """
     Вьюсет позволяет выполнять операции с пользователями, по
-    используемым эндпоинтам:
+    эндпоинтам:
     Список пользователей               api/users/        GET
     Профиль пользователя               api/users/{id}/   GET
     Регистрация пользователя           api/users/        POST

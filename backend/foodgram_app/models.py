@@ -177,9 +177,6 @@ class Favorite(models.Model):
     def __str__(self):
         return f'{self.user} выбрал люимым рецептом {self.recipe}'
 
-# модели ShoppingCart одинаковые с Favorite, но думаю с двумя моделями
-# код будет наглянее
-
 
 class ShoppingCart(models.Model):
     """ Модель связывает рецепт в корзине и пользователя."""
