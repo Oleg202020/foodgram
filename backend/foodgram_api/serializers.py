@@ -125,7 +125,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         Валидация полей (проверка ingredients, tags).
         Если ингредиентов нет или amount < 1, ---> 400 Bad Request.
         """
-        if not data.get('image'):
+        if not self.instance and not data.get('image'):
             raise serializers.ValidationError(
                 {'image': 'Нужно добавить файл с изображением.'})
         ingredients = data.get('ingredients')
