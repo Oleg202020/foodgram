@@ -189,4 +189,3 @@ jobs:
           Добавленный комментарий: ${{github.event.commits[0].message}}          
           Repository: ${{ github.repository }}
           Ссылка на комментарий: https://github.com/${{ github.repository }}/commit/${{github.sha}}!
-
