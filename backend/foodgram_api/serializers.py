@@ -103,7 +103,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         many=True,
     )
     author = CorreсtAndSeeUserSerializer(read_only=True)
-    image = Base64ImageField(required=True, allow_null=False)
+    image = Base64ImageField(required=False, allow_null=False)
 
     class Meta:
         model = Recipe
@@ -125,9 +125,17 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         Валидация полей (проверка ingredients, tags).
         Если ингредиентов нет или amount < 1, ---> 400 Bad Request.
         """
-        if not self.instance and not data.get('image'):
-            raise serializers.ValidationError(
-                {'image': 'Нужно добавить файл с изображением.'})
+        if not self.instance:
+            if not data.get('image'):
+                raise serializers.ValidationError(
+                    {'image': 'Нужно добавить файл с изображением.'})
+        else:
+            if 'image' in data:
+                if not data['image']:
+                    raise serializers.ValidationError(
+                        {'image': 'Изображение обязательное поле. \
+                         Загрузите новый файл.'}
+                    )
         ingredients = data.get('ingredients')
         if not ingredients:
             raise ValidationError(
