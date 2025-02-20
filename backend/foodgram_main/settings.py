@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'foodgramlar.viewdns.net']
 
@@ -136,7 +136,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = '/backend_static/static'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = '/media'
 
 
 # Default primary key field type
