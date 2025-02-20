@@ -51,6 +51,3 @@ class TagFavCartFilter(FilterSet):
     class Meta:
         model = Recipe
         fields = ['tags', 'author', 'is_in_shopping_cart']
-
-
-"""нестоило удалять докер пока проект не сдан :("""
