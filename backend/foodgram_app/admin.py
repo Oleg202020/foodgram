@@ -10,6 +10,7 @@ class IngredientRecipeInline(admin.TabularInline):
     """
     model = models.IngredientRecipe
     extra = 1
+    fields = ('ingredient', 'unit', 'amount')
 
 
 @admin.register(models.Tag)
@@ -22,13 +23,18 @@ class TagAdmin(admin.ModelAdmin):
 @admin.register(models.Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     """Админ-модель для ингредиентов."""
-    list_display = ('id', 'name', 'measurement_unit')
+    list_display = ('id', 'name', 'measurement_unit',
+                    'measurement_unit_choice')
     search_fields = ('name',)
-    list_filter = ('measurement_unit',)
+    list_filter = ('measurement_unit', 'measurement_unit_choice',)
 
 
 @admin.register(models.Recipe)
 class RecipeAdmin(admin.ModelAdmin):
+    """
+    Админ-модель рецептов, для поиска по названию и имени автора.
+    фильтрация по тегам, возможность добавить ингредиенты через Inline.
+    """
     list_display = ('name', 'author', 'favorited_counts')
     search_fields = ('name', 'author__username')
     list_filter = ('tags',)

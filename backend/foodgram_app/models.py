@@ -45,7 +45,6 @@ class Ingredient(models.Model):
                             max_length=100, unique=True)
     measurement_unit = models.CharField('Единица измерения',
                                         max_length=50)
-    # возможно через выпадающий список, но вроде нет
 
     class Meta:
         ordering = ['name']
@@ -87,8 +86,6 @@ class Recipe(models.Model):
     text = models.TextField(
         verbose_name='Описание рецепта')
     cooking_time = models.PositiveSmallIntegerField(
-        # может прикрутить с полем времени в
-        # сериалайзере для валидации? но вроде нет
         verbose_name='Время приготовления',
         validators=[MinValueValidator(
             MIN_COOKING_TIME,
@@ -141,11 +138,23 @@ class IngredientRecipe(models.Model):
             'Ингиридиентов должен быть больше 0'),
         ]
     )
+    UNIT_CHOICES = [
+        ('г', 'Граммы'),
+        ('кг', 'Килограммы'),
+        ('мл', 'Миллилитры'),
+        ('л', 'Литры'),
+        ('шт', 'Штуки'),
+    ]
+    unit = models.CharField(
+        'Ед. измерения для рецепта',
+        max_length=10,
+        choices=UNIT_CHOICES,
+        default='г'
+    )
 
     def __str__(self):
-        return f'рецепт {self.recipe} содержит ингридиент{self.ingredient}\
-            количество {self.amount}'
-
+        (f'Рецепт {self.recipe} содержит \
+         {self.amount} {self.unit} {self.ingredient}')
 
 class Favorite(models.Model):
     """Модель связывает избранный рецепт и пользователя."""
