@@ -18,5 +18,3 @@ class Command(BaseCommand):
                 )
         self.stdout.write(
             self.style.SUCCESS('Ингредиентов загружены.'))
-
-# python manage.py load_ingredients

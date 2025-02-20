@@ -13,7 +13,7 @@ from foodgram_users.serializers import CorreсtAndSeeUserSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-MIN_AMOUNT = 1        # г,мл, кг, капля (дробных значений не предусмотрено?)
+MIN_AMOUNT = 1
 
 User = get_user_model()
 
@@ -111,6 +111,10 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
                   'text', 'cooking_time']
 
     def tags_and_ingredients_set(self, recipe, tags, ingredients):
+        """
+        Привязывает к рецепту выбранные теги и ингредиенты.
+        Создаёт записи в промежуточной модели IngredientRecipe.
+        """
         recipe.tags.set(tags)
         IngredientRecipe.objects.bulk_create(
             [IngredientRecipe(
@@ -217,6 +221,11 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для детального представления рецептов в API.
+    Включает связанные теги, автора, ингредиенты, а также поля проверки,
+    находится ли рецепт в избранном пользователя или в корзине.
+    """
     tags = TagSerializer(read_only=True, many=True,)
     author = CorreсtAndSeeUserSerializer(read_only=True)
     image = Base64ImageField(required=True)
@@ -235,6 +244,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         """
         Проверяет, находится ли текущий рецепт в избранном у пользователя.
+        Возвращает True/False.
         """
         user = self.context['request'].user
         if user.is_anonymous:
@@ -242,7 +252,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         return user.favorite_recipes.filter(recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
-        """Проверяет, есть ли текущий рецепт в корзине у пользователя."""
+        """
+        Проверяет, есть ли рецепт в корзине у пользователя.
+        Возвращает True/False.
+        """
         user = self.context['request'].user
         if user.is_anonymous:
             return False

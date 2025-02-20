@@ -138,23 +138,11 @@ class IngredientRecipe(models.Model):
             'Ингиридиентов должен быть больше 0'),
         ]
     )
-    UNIT_CHOICES = [
-        ('г', 'Граммы'),
-        ('кг', 'Килограммы'),
-        ('мл', 'Миллилитры'),
-        ('л', 'Литры'),
-        ('шт', 'Штуки'),
-    ]
-    unit = models.CharField(
-        'Ед. измерения для рецепта',
-        max_length=10,
-        choices=UNIT_CHOICES,
-        default='г'
-    )
 
     def __str__(self):
-        (f'Рецепт {self.recipe} содержит \
-         {self.amount} {self.unit} {self.ingredient}')
+        return f'рецепт {self.recipe} содержит ингридиент{self.ingredient}\
+            количество {self.amount}'
+
 
 class Favorite(models.Model):
     """Модель связывает избранный рецепт и пользователя."""

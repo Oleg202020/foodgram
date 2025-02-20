@@ -87,7 +87,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
 
     def get_serializer_class(self):
-        """Возвращает сериализатор в зависимости от действия (action)."""
+        """Возвращает сериализатор в зависимости от action."""
         if self.action in ('list', 'retrieve'):
             return RecipeSerializer
         return CreateRecipeSerializer
@@ -101,7 +101,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, permission_classes=(AllowAny,), url_path='get-link')
     def get_short_link(self, request, pk=None):
         """Генерирует или получает из базы короткую ссылку для рецепта.
-        Доступ /api/recipes/{id}/get-link/      GET
+        /api/recipes/{id}/get-link/      GET
         """
         recipe = get_object_or_404(Recipe, pk=pk)
         short_domain = "https://foodgramlar.viewdns.net/s"

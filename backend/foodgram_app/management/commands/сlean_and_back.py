@@ -18,5 +18,3 @@ class Command(BaseCommand):
             return
 
         os.chdir(r"..\backend")
-
-# python manage.py сlean_and_back
