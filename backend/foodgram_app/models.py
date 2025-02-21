@@ -1,28 +1,17 @@
 import random
 import string
 
+from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.apps import apps
+
+from .constants import *
 
 User = get_user_model()
 
-MIN_AMOUNT = 1        # г,мл, кг, капля (дробных значений не предусмотрено?)
-MIN_COOKING_TIME = 1  # минута
-
-
-def generate_short_code(length=3):
-    """Генерирует случайную строку из символов [a-zA-Z0-9]."""
-    letters_digits = string.ascii_letters + string.digits
-    return ''.join(random.choice(letters_digits) for _ in range(length))
-
-
-def generate_unique_short_code(length=3):
-    """Генерирует короткую ссылку, уникальную в Recipe."""
-    while True:
-        code = generate_short_code(length)
-        if not Recipe.objects.filter(short_link=code).exists():
-            return code
+# MIN_AMOUNT = 1        # г,мл, кг, капля (дробных значений не предусмотрено?)
+# MIN_COOKING_TIME = 1  # минута
 
 
 class Tag(models.Model):
@@ -104,6 +93,28 @@ class Recipe(models.Model):
         verbose_name_plural = 'Рецепты'
         ordering = ['-pub_date']
 
+    @staticmethod
+    def generate_short_code(length=3):
+        """
+        Генерирует случайную строку из символов a-z, A-Z, 0-9.
+        """
+        letters_digits = string.ascii_letters + string.digits
+        return ''.join(random.choice(letters_digits) for _ in range(length))
+
+    @staticmethod
+    def generate_unique_short_code(length=3):
+        """
+        Генерирует короткую ссылку, уникальную для модели Recipe,
+        проверяя, что такой short_link не существует в БД.
+        """
+        # Через apps.get_model динамически получаем класс Recipe,
+        # чтобы избежать конфликтов при статическом импортировании.
+        RecipeModel = apps.get_model('foodgram_app', 'Recipe')
+        while True:
+            code = Recipe.generate_short_code(length)
+            if not RecipeModel.objects.filter(short_link=code).exists():
+                return code
+
     def save(self, *args, **kwargs):
         """
         Переопределяет метод сохранения,
@@ -111,7 +122,7 @@ class Recipe(models.Model):
         новую уникальную короткую ссылку.
         """
         if not self.short_link:
-            self.short_link = generate_unique_short_code(3)
+            self.short_link = self.generate_unique_short_code(3)
         super().save(*args, **kwargs)
 
     def __str__(self):

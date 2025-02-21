@@ -41,7 +41,7 @@ class RecipeAdmin(admin.ModelAdmin):
     inlines = [IngredientRecipeInline]
     readonly_fields = ('short_link',)
 
+    @admin.display(description='Добавлений в избранное')
     def favorited_counts(self, obj):
         """Подсчёт, сколько раз рецепт добавляли в избранное."""
         return obj.favorite_recipes.count()
-    favorited_counts.short_description = 'Добавлений в избранное'

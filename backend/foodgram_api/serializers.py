@@ -13,7 +13,7 @@ from foodgram_users.serializers import CorreсtAndSeeUserSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from .constants import MIN_AMOUNT
+from foodgram_app.constants import MIN_AMOUNT
 
 User = get_user_model()
 

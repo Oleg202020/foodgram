@@ -92,13 +92,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return RecipeSerializer
         return CreateRecipeSerializer
-
+    """
     def get_permissions(self):
-        """Авторизованный пользователь может добавить в корзину любой рецепт"""
+        Авторизованный пользователь может добавить в корзину любой рецепт
         if self.action in ('shopping_cart',):
             return [IsAuthenticated()]
         return super().get_permissions()
-
+    """
     @action(detail=True, permission_classes=(AllowAny,), url_path='get-link')
     def get_short_link(self, request, pk=None):
         """Генерирует или получает из базы короткую ссылку для рецепта.
@@ -112,7 +112,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        methods=['post', 'delete']
+        methods=['post', 'delete'],
+        permission_classes=[IsAuthenticated],
     )
     def shopping_cart(self, request, pk):
         """Добавляет или удаляет рецепт в списке покупок пользователя."""
@@ -147,15 +148,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request, **kwargs):
         """Позволяет скачать список покупок пользователю."""
-        ingredients = (
-            IngredientRecipe.objects
-            .filter(recipe__shoppingcart_recipes__user=request.user
-                    ).values('ingredient'
-                             ).annotate(total_amount=Sum('amount')
-                                        ).values_list(
-                                            'ingredient__name',
-                                            'total_amount',
-                                            'ingredient__measurement_unit'))
+        ingredients = (IngredientRecipe.objects.filter(
+            recipe__shoppingcart_recipes__user=request.user).values(
+                'ingredient').annotate(
+                    total_amount=Sum('amount')).values_list(
+                        'ingredient__name',
+                        'total_amount',
+                        'ingredient__measurement_unit'))
         lines = []
         for name, total, unit in ingredients:
             lines.append(f'{name} - {total} {unit}')

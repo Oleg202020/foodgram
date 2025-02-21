@@ -1,1 +1,1 @@
-MIN_AMOUNT = 1
+
