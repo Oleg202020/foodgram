@@ -1,7 +1,7 @@
 """Очищает базу, возвращается в \backend и запускает сервер."""
 import os
-import subprocess
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 

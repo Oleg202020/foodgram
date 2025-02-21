@@ -13,7 +13,7 @@ from foodgram_users.serializers import CorreсtAndSeeUserSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-MIN_AMOUNT = 1
+from .constants import MIN_AMOUNT
 
 User = get_user_model()
 
@@ -137,8 +137,8 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             if 'image' in data:
                 if not data['image']:
                     raise serializers.ValidationError(
-                        {'image': 'Изображение обязательное поле. \
-                         Загрузите новый файл.'}
+                        ({'image': 'Изображение обязательное поле.'
+                         'Загрузите новый файл.'})
                     )
         ingredients = data.get('ingredients')
         if not ingredients:
@@ -156,8 +156,8 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             ingredient_id = ingredient.get('id')
             if not Ingredient.objects.filter(pk=ingredient_id).exists():
                 raise ValidationError(
-                    {'ingredients': f'Ингредиента с id={ingredient_id} \
-                     не существует.'}
+                    ({'ingredients': f'Ингредиента с id={ingredient_id}'
+                      'не существует.'})
                 )
             if ingredient not in ingredients_list:
                 ingredients_list.append(ingredient)
