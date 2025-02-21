@@ -8,9 +8,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
-DEBUG = os.getenv('DEBUG', 'False')
+DEBUG = True
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(', ')
+ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'foodgramlar.viewdns.net']
 
 
 # Application definition
@@ -25,7 +25,6 @@ INSTALLED_APPS = [
     'foodgram_api.apps.FoodgramApiConfig',
     'foodgram_app.apps.FoodgramAppConfig',
     'foodgram_users.apps.FoodgramUsersConfig',
-    'core_foodgram.apps.CoreFoodgramConfig',
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
@@ -66,7 +65,7 @@ WSGI_APPLICATION = 'foodgram_main.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
-"""
+
 if DEBUG:
     DATABASES = {
         'default': {
@@ -74,7 +73,8 @@ if DEBUG:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-else:"""
+
+"""else:
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -85,7 +85,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', 5432)
     }
 }
-
+"""
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators

@@ -1,6 +1,6 @@
-from core_foodgram.filters import IngredientFilter, TagFavCartFilter
-from core_foodgram.pagination import CustomPagination
-from core_foodgram.permissions import IsOwnerOrAdmin
+from .filters import IngredientFilter, TagFavCartFilter
+from .pagination import CustomPagination
+from .permissions import IsOwnerOrAdmin
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect

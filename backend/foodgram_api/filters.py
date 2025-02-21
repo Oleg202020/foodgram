@@ -43,13 +43,6 @@ class TagFavCartFilter(FilterSet):
             return queryset.filter(shoppingcart_recipes__user=user)
         return queryset
 
-    def filter_by_tags(self, queryset, name, value):
-        """Фильтрует рецепты по тегам."""
-        tag_slugs = self.request.query_params.getlist('tags')
-        if tag_slugs:
-            return queryset.filter(tags__slug__in=tag_slugs).distinct()
-        return queryset
-
     class Meta:
         model = Recipe
         fields = ['tags', 'author', 'is_in_shopping_cart']

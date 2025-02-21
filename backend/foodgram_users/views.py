@@ -1,4 +1,4 @@
-from core_foodgram.pagination import CustomPagination
+from foodgram_api.pagination import CustomPagination
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from djoser.serializers import SetPasswordSerializer
