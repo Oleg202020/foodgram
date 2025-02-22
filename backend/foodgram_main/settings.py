@@ -12,6 +12,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'foodgramlar.viewdns.net']
 
+USE_SQL = True
 
 # Application definition
 
@@ -66,7 +67,7 @@ WSGI_APPLICATION = 'foodgram_main.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-if DEBUG:
+if USE_SQL:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -74,18 +75,18 @@ if DEBUG:
         }
     }
 
-"""else:
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'django'),
-        'USER': os.getenv('POSTGRES_USER', 'django'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', ''),
-        'PORT': os.getenv('DB_PORT', 5432)
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'django'),
+            'USER': os.getenv('POSTGRES_USER', 'django'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', ''),
+            'PORT': os.getenv('DB_PORT', 5432)
+        }
     }
-}
-"""
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -138,6 +139,19 @@ STATIC_ROOT = '/backend_static/static'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/media'
 
+# Настройки Djoser
+DJOSER = {
+    'HIDE_USERS': False,     # Или True, если нужно скрывать эндпоинт "Все пользователи"
+    'LOGIN_FIELD': 'email',  # Используем e-mail как логин
+    'SERIALIZERS': {
+        'user': 'foodgram_users.serializers.CorrectAndSeeUserSerializer',
+        'current_user': 'foodgram_users.serializers.CorrectAndSeeUserSerializer',
+    },
+    'PERMISSIONS': {
+        'user': ['rest_framework.permissions.AllowAny'],
+        'user_list': ['rest_framework.permissions.AllowAny'],
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

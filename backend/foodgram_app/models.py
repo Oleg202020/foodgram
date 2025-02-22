@@ -3,21 +3,25 @@ import string
 
 from django.apps import apps
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from .constants import MIN_AMOUNT, MIN_COOKING_TIME
+from .constants import (INGR_MAX_LENGTH, MAX_AMOUNT, MAX_COOKING_TIME,
+                        MEASUREMENT_MAX_LENGTH, MIN_AMOUNT, MIN_COOKING_TIME,
+                        RECIPE_NAME_MAX_LENGTH, TAG_MAX_LENGTH)
 
 User = get_user_model()
 
 
 class Tag(models.Model):
     """Дополнительная модель для сортировки."""
-    name = models.CharField('Название тега', max_length=50, unique=True)
-    slug = models.SlugField('Слаг', unique=True,)
+    name = models.CharField('Название тега',
+                            max_length=TAG_MAX_LENGTH, unique=True)
+    slug = models.SlugField('Slug',
+                            max_length=TAG_MAX_LENGTH, unique=True,)
 
     class Meta:
-        ordering = ['name']
+        ordering = ('name',)
         verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
 
@@ -27,10 +31,12 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     """Модель списка ингридиентов и единиц измерения."""
-    name = models.CharField('Название ингридиента',
-                            max_length=100, unique=True)
-    measurement_unit = models.CharField('Единица измерения',
-                                        max_length=50)
+    name = models.CharField(
+        'Название ингридиента', max_length=INGR_MAX_LENGTH, unique=True
+    )
+    measurement_unit = models.CharField(
+        'Единица измерения', max_length=MEASUREMENT_MAX_LENGTH
+    )
 
     class Meta:
         ordering = ['name']
@@ -63,7 +69,7 @@ class Recipe(models.Model):
         related_name='recipe_ingredient',
         verbose_name='Ингридиенты рецепта')
     name = models.CharField(
-        max_length=256,
+        max_length=RECIPE_NAME_MAX_LENGTH,
         verbose_name='Название рецепта')
     image = models.ImageField(
         upload_to='foodgram_app/images/',
@@ -73,10 +79,14 @@ class Recipe(models.Model):
         verbose_name='Описание рецепта')
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления',
-        validators=[MinValueValidator(
-            MIN_COOKING_TIME,
-            'Время приготовления должено быть больше 0')
-        ]
+        validators=[
+            MinValueValidator(
+                MIN_COOKING_TIME,
+                message='Время приготовления должно быть >= 1'),
+            MaxValueValidator(
+                MAX_COOKING_TIME,
+                message='Слишком большое время приготовления.'),
+        ],
     )
     pub_date = models.DateTimeField(
         verbose_name='Дата создания', auto_now_add=True)
@@ -88,7 +98,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ['-pub_date']
+        ordering = ('-pub_date',)
 
     @staticmethod
     def generate_short_code(length=3):
@@ -104,8 +114,6 @@ class Recipe(models.Model):
         Генерирует короткую ссылку, уникальную для модели Recipe,
         проверяя, что такой short_link не существует в БД.
         """
-        # Через apps.get_model динамически получаем класс Recipe,
-        # чтобы избежать конфликтов при статическом импортировании.
         RecipeModel = apps.get_model('foodgram_app', 'Recipe')
         while True:
             code = Recipe.generate_short_code(length)
@@ -141,74 +149,70 @@ class IngredientRecipe(models.Model):
         verbose_name='Ингридиент')
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
-        validators=[MinValueValidator(
-            MIN_AMOUNT,
-            'Ингиридиентов должен быть больше 0'),
-        ]
-    )
-
-    def __str__(self):
-        return f'рецепт {self.recipe} содержит ингридиент{self.ingredient}\
-            количество {self.amount}'
-
-
-class Favorite(models.Model):
-    """Модель связывает избранный рецепт и пользователя."""
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE,
-        related_name='favorite_recipes',  # для доступа к объектам модели
-        verbose_name='Рецепт')
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='favorite_recipes',
-        verbose_name='Пользователь'
+        validators=[
+            MinValueValidator(
+                MIN_AMOUNT, 'Ингиридиентов должен быть больше 0'),
+            MaxValueValidator(
+                MAX_AMOUNT, 'Слишком много ингридиентов'),
+        ],
     )
 
     class Meta:
-        verbose_name = 'Выбранный рецепт'
-        verbose_name_plural = 'Выбранные рецепты'
-        ordering = ['recipe', 'user']
+        verbose_name = 'Связь Рецепт-Ингредиент'
+        verbose_name_plural = 'Связи Рецепт-Ингредиент'
         constraints = [
             models.UniqueConstraint(
-                fields=['recipe', 'user'],
-                name='%(app_label)s_%(class)s_unique_favorite'
-            ),
-            models.CheckConstraint(
-                name='%(app_label)s_%(class)s_prevent_self_favorite',
-                check=~models.Q(recipe=models.F('user'))
+                fields=['recipe', 'ingredient'],
+                name='unique_recipe_ingredient'
             )
         ]
 
     def __str__(self):
-        return f'{self.user} выбрал люимым рецептом {self.recipe}'
+        return f'{self.recipe} связан {self.ingredient} - {self.amount}'
 
 
-class ShoppingCart(models.Model):
-    """ Модель связывает рецепт в корзине и пользователя."""
-    recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE,
-        related_name='shoppingcart_recipes',
-        verbose_name='Рецепт')
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='shoppingcart_recipes',
-        verbose_name='Пользователь'
-    )
+class UserRecipeRelation(models.Model):
+    """
+    Абстрактная модель для связи "пользователь - рецепт".
+    Повторяющиеся поля и настройки.
+    """
+    user = models.ForeignKey('foodgram_users.User', on_delete=models.CASCADE)
+    recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE)
 
     class Meta:
-        verbose_name = 'Выбранный рецепт'
-        verbose_name_plural = 'Выбранные рецепты'
-        ordering = ['recipe', 'user']
+        abstract = True
+        default_related_name = '%(class)ss'
         constraints = [
             models.UniqueConstraint(
                 fields=['recipe', 'user'],
-                name='%(app_label)s_%(class)s_unique_shoppingcart'
+                name='%(app_label)s_%(class)s_unique'
             ),
             models.CheckConstraint(
-                name='%(app_label)s_%(class)s_prevent_self_shoppingcart',
+                name='%(app_label)s_%(class)s_prevent_self_rel',
                 check=~models.Q(recipe=models.F('user'))
             )
         ]
+        ordering = ('recipe', 'user',)
 
     def __str__(self):
-        return f'{self.user} выбрал рецепт для покупки {self.recipe}'
+        return f'{self.user} — {self.recipe}'
+
+
+class Favorite(UserRecipeRelation):
+    """
+    Модель "Избранное". Общая часть вынесена в модель UserRecipeRelation,
+    чтобы не дублировать поля recipe и user.
+    """
+    class Meta(UserRecipeRelation.Meta):
+        verbose_name = 'Избранный рецепт'
+        verbose_name_plural = 'Избранные рецепты'
+
+
+class ShoppingCart(UserRecipeRelation):
+    """
+    Модель "Список покупок". Общая часть вынесена в модель UserRecipeRelation,
+    чтобы не дублировать поля recipe и user.
+    """
+    class Meta(UserRecipeRelation.Meta):
+        verbose_name = 'Рецепт в корзине'
+        verbose_name_plural = 'Рецепты в корзине'

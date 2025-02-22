@@ -33,14 +33,14 @@ class TagFavCartFilter(FilterSet):
         """Фильтрует избранные рецепты."""
         user = self.request.user
         if value and user.is_authenticated:
-            return queryset.filter(favorite_recipes__user=user)
+            return queryset.filter(favorites__user=user)
         return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         """Фильтрует рецепты по списку покупок."""
         user = self.request.user
         if value and user.is_authenticated:
-            return queryset.filter(shoppingcart_recipes__user=user)
+            return queryset.filter(shoppingcarts__user=user)
         return queryset
 
     class Meta:

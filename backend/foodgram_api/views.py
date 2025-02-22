@@ -1,6 +1,6 @@
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django_filters.rest_framework import DjangoFilterBackend
 from foodgram_api.serializers import (CreateRecipeSerializer,
                                       IngredientSerializer,
@@ -8,7 +8,7 @@ from foodgram_api.serializers import (CreateRecipeSerializer,
                                       TagSerializer)
 from foodgram_app.models import (Favorite, Ingredient, IngredientRecipe,
                                  Recipe, ShoppingCart, Tag)
-from rest_framework import status, viewsets
+from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -38,6 +38,29 @@ Cписок тегов                        api/tags/                         
 Добавить рецепт в избранное         api/recipes/{id}/favorite/          POST
 Удалить рецепт из избранного        api/recipes/{id}/favorite/          DELETE
 """
+
+'''
+# Или клас или функия
+def recipe_short_redirect_view(request, short_link):
+    """Находит рецепт по short_link и редиректит на /recipes/<id>/."""
+    recipe = get_object_or_404(Recipe, short_link=short_link)
+    return redirect(f"/recipes/{recipe.id}/")
+в урле:  path('<str:short_link>/', recipe_short_redirect_view,
+              name='recipe_short_link'),
+    мне больше класс нравится
+'''
+
+
+class RecipeShortLinkView(generics.GenericAPIView):
+    """ Позволяет открыть рецепт по короткой ссылке:
+    https://foodgramlar.viewdns.net/s/<short_link>
+    Позволяет перейти на рецепт по короткой ссылке `/s/<short_link>/`.
+    Редирект на полноценную страницу рецепта во фронтенде.
+    """
+    def get(self, request, short_link):
+        recipe = get_object_or_404(Recipe, short_link=short_link)
+        frontend_url = f"/recipes/{recipe.id}/"
+        return redirect(frontend_url)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -183,7 +206,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         /api/recipes/download_shopping_cart/         GET
         """
         ingredients = (IngredientRecipe.objects
-                       .filter(recipe__shoppingcart_recipes__user=request.user)
+                       .filter(recipe__shoppingcarts__user=request.user)
                        .values('ingredient')
                        .annotate(total_amount=Sum('amount'))
                        .order_by('ingredient__name')
