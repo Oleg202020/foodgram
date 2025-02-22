@@ -1,14 +1,20 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+
 from djoser.serializers import SetPasswordSerializer
-from foodgram_api.pagination import CustomPagination
+from djoser.views import UserViewSet as DjoserUserViewSet
+
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from foodgram_api.pagination import CustomPagination
+
 from .models import Follow
-from .serializers import (CorreсtAndSeeUserSerializer, FollowSerializer,
+
+from .models import Follow
+from .serializers import (CorrectAndSeeUserSerializer, FollowSerializer,
                           RegistrationUserSerializer)
 
 """
@@ -46,14 +52,14 @@ class UserViewSet(viewsets.ModelViewSet):
 
     """
     queryset = User.objects.all()
-    serializer_class = CorreсtAndSeeUserSerializer
+    serializer_class = CorrectAndSeeUserSerializer
     pagination_class = CustomPagination
 
     def get_serializer_class(self):
         """Определяет сериализатор для использования ViewSet
          зависимости от action."""
         if self.action in ('list', 'retrieve'):
-            return CorreсtAndSeeUserSerializer
+            return CorrectAndSeeUserSerializer
         return RegistrationUserSerializer
 
     @action(detail=False, methods=['get'],
@@ -63,7 +69,7 @@ class UserViewSet(viewsets.ModelViewSet):
         Используется для получения информации о пользователе, который
         выполняет запрос. Доступно только авторизованным пользователям.
         """
-        serializer = CorreсtAndSeeUserSerializer(request.user,
+        serializer = CorrectAndSeeUserSerializer(request.user,
                                                  context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -76,7 +82,7 @@ class UserViewSet(viewsets.ModelViewSet):
         """Обновляет или удаляет аватар текущего пользователя."""
         user = get_object_or_404(User, pk=request.user.id)
         if request.method == 'PUT':
-            serializers = CorreсtAndSeeUserSerializer(
+            serializers = CorrectAndSeeUserSerializer(
                 user, data=request.data,
                 partial=True, context={'request': request}
             )

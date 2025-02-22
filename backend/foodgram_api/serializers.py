@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from drf_extra_fields.fields import Base64ImageField
 from foodgram_app.constants import MIN_AMOUNT
 from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
-from foodgram_users.serializers import CorreсtAndSeeUserSerializer
+from foodgram_users.serializers import CorrectAndSeeUserSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -101,7 +101,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True,
     )
-    author = CorreсtAndSeeUserSerializer(read_only=True)
+    author = CorrectAndSeeUserSerializer(read_only=True)
     image = Base64ImageField(required=False, allow_null=False)
 
     class Meta:
@@ -226,7 +226,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     находится ли рецепт в избранном пользователя или в корзине.
     """
     tags = TagSerializer(read_only=True, many=True,)
-    author = CorreсtAndSeeUserSerializer(read_only=True)
+    author = CorrectAndSeeUserSerializer(read_only=True)
     image = Base64ImageField(required=True)
     ingredients = IngredientRecipeSerializer(many=True, read_only=True,
                                              source='ingredient_recipe')

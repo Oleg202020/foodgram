@@ -10,9 +10,6 @@ from .constants import MIN_AMOUNT, MIN_COOKING_TIME
 
 User = get_user_model()
 
-# MIN_AMOUNT = 1        # г,мл, кг, капля (дробных значений не предусмотрено?)
-# MIN_COOKING_TIME = 1  # минута
-
 
 class Tag(models.Model):
     """Дополнительная модель для сортировки."""

@@ -1,22 +1,27 @@
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
+
 from django_filters.rest_framework import DjangoFilterBackend
-from foodgram_api.serializers import (CreateRecipeSerializer,
-                                      IngredientSerializer,
-                                      ListRecipeSerializer, RecipeSerializer,
-                                      TagSerializer)
-from foodgram_app.models import (Favorite, Ingredient, IngredientRecipe,
-                                 Recipe, ShoppingCart, Tag)
-from rest_framework import generics, status, viewsets
+
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .filters import IngredientFilter, TagFavCartFilter
 from .pagination import CustomPagination
 from .permissions import IsOwnerOrAdmin
+
+from foodgram_app.models import (
+    Favorite, Ingredient, IngredientRecipe,
+    Recipe, ShoppingCart, Tag
+)
+from foodgram_api.serializers import (
+    CreateRecipeSerializer, IngredientSerializer, ListRecipeSerializer,
+    RecipeSerializer, TagSerializer
+)
+from .filters import IngredientFilter, TagFavCartFilter
 
 """
 Cписок тегов                        api/tags/                           GET
@@ -38,17 +43,6 @@ Cписок тегов                        api/tags/                         
 Добавить рецепт в избранное         api/recipes/{id}/favorite/          POST
 Удалить рецепт из избранного        api/recipes/{id}/favorite/          DELETE
 """
-
-
-class RecipeShortLinkView(generics.GenericAPIView):
-    """
-    Позволяет получить рецепт по короткой ссылке `/s/<short_link>/`.
-    Редирект на полноценную страницу рецепта во фронтенде.
-    """
-    def get(self, request, short_link):
-        recipe = get_object_or_404(Recipe, short_link=short_link)
-        frontend_url = f"/recipes/{recipe.id}/"
-        return redirect(frontend_url)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -92,111 +86,121 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return RecipeSerializer
         return CreateRecipeSerializer
-    """
-    def get_permissions(self):
-        Авторизованный пользователь может добавить в корзину любой рецепт
-        if self.action in ('shopping_cart',):
-            return [IsAuthenticated()]
-        return super().get_permissions()
-    """
+
     @action(detail=True, permission_classes=(AllowAny,), url_path='get-link')
     def get_short_link(self, request, pk=None):
         """Генерирует или получает из базы короткую ссылку для рецепта.
-        /api/recipes/{id}/get-link/      GET
+        /api/recipes/{id}/get-link/          GET
         """
         recipe = get_object_or_404(Recipe, pk=pk)
         short_domain = "https://foodgramlar.viewdns.net/s"
         short_url = f"{short_domain}/{recipe.short_link}"
-        return Response({'short-link': short_url},
-                        status=status.HTTP_200_OK)
+        return Response({'short-link': short_url}, status=status.HTTP_200_OK)
 
-    @action(
-        detail=True,
-        methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated],
-    )
+    @action(detail=True, methods=['post'],
+            permission_classes=[IsAuthenticated])
     def shopping_cart(self, request, pk):
-        """Добавляет или удаляет рецепт в списке покупок пользователя."""
-        user = request.user
-        recipe = get_object_or_404(Recipe, pk=pk)
-        if request.method == 'POST':
-            if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
-                return Response(
-                    {'errors': 'Рецепт уже в списке покупок.'},
-                    status=status.HTTP_400_BAD_REQUEST)
-            ShoppingCart.objects.create(user=user, recipe=recipe)
-            serializer = ListRecipeSerializer(
-                recipe, context={'request': request})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if request.method == 'DELETE':
-            in_cart = ShoppingCart.objects.filter(user=user, recipe=recipe)
-            if not in_cart:
-                return Response(
-                    {'detail': 'Рецепт не в списке покупок.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            in_cart.delete()
-            return Response(
-                {'detail': 'Рецепт успешно удален из списка покупок.'},
-                status=status.HTTP_204_NO_CONTENT
-            )
+        """
+        Добавляет рецепт в список покупок пользователя.
+        /api/recipes/{id}/shopping_cart/     POST
+        """
+        return self.create_relation(
+            model=ShoppingCart,
+            user=request.user,
+            pk=pk,
+            error_msg='Рецепт в списке покупок.',
+            success_msg='Рецепт добавлен в список покупок.'
+        )
 
-    @action(
-        detail=False,
-        methods=['get'],
-        permission_classes=[IsAuthenticated]
-    )
+    @shopping_cart.mapping.delete
+    def remove_from_cart(self, request, pk):
+        """
+        Удаляет рецепт из списка покупок пользователя.
+        /api/recipes/{id}/shopping_cart/     DELETE
+        """
+        return self.delete_relation(
+            model=ShoppingCart,
+            user=request.user,
+            pk=pk,
+            error_msg='Рецепта нет в списке покупок.'
+        )
+
+    @action(detail=True, methods=['post'],
+            permission_classes=[IsAuthenticated])
+    def favorite(self, request, pk):
+        """
+        Добавляет рецепт в избранное пользователя.
+        /api/recipes/{id}/favorite/         POST
+        """
+        return self.create_relation(
+            model=Favorite,
+            user=request.user,
+            pk=pk,
+            error_msg='Рецепт уже в избранном.',
+            success_msg='Рецепт добавлен в избранное.'
+        )
+
+    @favorite.mapping.delete
+    def remove_favorite(self, request, pk):
+        """
+        Удаляет рецепт из избранного пользователя.
+        /api/recipes/{id}/favorite/         DELETE
+        """
+        return self.delete_relation(
+            model=Favorite,
+            user=request.user,
+            pk=pk,
+            error_msg='Рецепта нет в избранном.'
+        )
+
+    def create_relation(self, model, user, pk, error_msg, success_msg):
+        """
+        Метод для добавления записи ShoppingCart или Favorite.
+        Используем get_or_create() для проверки дубликата.
+        """
+        recipe = get_object_or_404(Recipe, pk=pk)
+        obj, created = model.objects.get_or_create(user=user, recipe=recipe)
+        if not created:
+            return Response({'errors': error_msg},
+                            status=status.HTTP_400_BAD_REQUEST)
+        serializer = ListRecipeSerializer(recipe,
+                                          context={'request': self.request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete_relation(self, model, user, pk, error_msg):
+        """
+        Метод для удаления записи ShoppingCart или Favorite.
+        Если ничего не удалилось — возвращаем 400. Иначе 204.
+        """
+        recipe = get_object_or_404(Recipe, pk=pk)
+        deleted_count, _ = model.objects.filter(user=user,
+                                                recipe=recipe).delete()
+        if deleted_count == 0:
+            return Response({'errors': error_msg},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'],
+            permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request, **kwargs):
-        """Позволяет скачать список покупок пользователю."""
-        ingredients = (IngredientRecipe.objects.filter(
-            recipe__shoppingcart_recipes__user=request.user).values(
-                'ingredient').annotate(
-                    total_amount=Sum('amount')).values_list(
-                        'ingredient__name',
-                        'total_amount',
-                        'ingredient__measurement_unit'))
-        lines = []
-        for name, total, unit in ingredients:
-            lines.append(f'{name} - {total} {unit}')
+        """
+        Позволяет скачать список покупок в виде текстового файла.
+        /api/recipes/download_shopping_cart/         GET
+        """
+        ingredients = (IngredientRecipe.objects
+                       .filter(recipe__shoppingcart_recipes__user=request.user)
+                       .values('ingredient')
+                       .annotate(total_amount=Sum('amount'))
+                       .order_by('ingredient__name')
+                       .values_list(
+                           'ingredient__name',
+                           'total_amount',
+                           'ingredient__measurement_unit'))
+        lines = (
+            [f'{name} - {total} {unit}' for name, total, unit in ingredients]
+        )
         shopping_list = '\n'.join(lines) or 'Список для покупок пуст.'
         response = HttpResponse(shopping_list, content_type='text/plain')
-        response['Content-Disposition'] = 'attachment; \
-            filename="shopping_list.txt"'
+        response['Content-Disposition'] = (
+            'attachment; filename="shopping_list.txt"')
         return response
-
-    @action(
-        detail=True,
-        methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated],
-    )
-    def favorite(self, request, pk):
-        """Добавляет или удаляет рецепт из избранного текущего пользователя."""
-        recipe = get_object_or_404(Recipe, pk=pk)
-
-        if request.method == 'POST':
-            if Favorite.objects.filter(user=request.user,
-                                       recipe=recipe).exists():
-                return Response(
-                    {'errors': 'Рецепт находится в избранном.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            Favorite.objects.create(user=request.user, recipe=recipe)
-            serializer = ListRecipeSerializer(
-                recipe, context={'request': request})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        if request.method == 'DELETE':
-            favorite = Favorite.objects.filter(
-                user=request.user,
-                recipe=recipe
-            ).first()
-            if not favorite:
-                return Response(
-                    {'errors': 'Рецепта нет в избранном.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            favorite.delete()
-            return Response(
-                {'detail': 'Рецепт удален из избранного.'},
-                status=status.HTTP_204_NO_CONTENT
-            )

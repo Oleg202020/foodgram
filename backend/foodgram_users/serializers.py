@@ -28,7 +28,7 @@ class RegistrationUserSerializer(UserCreateSerializer):
         ]
 
 
-class CorreсtAndSeeUserSerializer(UserSerializer):
+class CorrectAndSeeUserSerializer(UserSerializer):
     """
     Сериализатор для просмотра и редактирования данных пользователя.
     Используемые адреса:
@@ -74,9 +74,8 @@ class CorreсtAndSeeUserSerializer(UserSerializer):
         return current_user.follower.filter(author=obj).exists()
 
 
-class FollowSerializer(serializers.ModelSerializer):
+class FollowSerializer(CorrectAndSeeUserSerializer):
     """Сериализатор для отображения информации о подписках."""
-    is_subscribed = serializers.SerializerMethodField()
     recipes = SerializerMethodField()
     recipes_count = SerializerMethodField()
 
@@ -113,13 +112,6 @@ class FollowSerializer(serializers.ModelSerializer):
                 code=status.HTTP_400_BAD_REQUEST
             )
         return data
-
-    def get_is_subscribed(self, obj):
-        """Возвращает True если пользователь подписан на автора."""
-        current_user = self.context['request'].user
-        if current_user.is_anonymous:
-            return False
-        return Follow.objects.filter(user=current_user, author=obj).exists()
 
     def get_recipes(self, obj):
         """Возвращает сериализованные данные о рецептах автора.
