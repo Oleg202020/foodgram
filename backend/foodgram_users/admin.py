@@ -34,16 +34,16 @@ class FollowAdmin(admin.ModelAdmin):
         return format_html(
             '<span style="color: {};">{}</span>',
             'green' if is_subscribed else 'red',
-            'Yes' if is_subscribed else 'No'
+            'Да' if is_subscribed else 'Нет'
         )
 
     @admin.display(description='Подписан ли пользователь на автора?')
     def is_subscribed_display(self, obj):
         """
-        Отображение "Yes"/"No" для подписки в админке.
+        Отображение "Да"/"Нет" для подписки в админке.
         """
         is_subscribed = obj.user.follower.filter(author=obj.author).exists()
-        return 'Yes' if is_subscribed else 'No'
+        return 'Да' if is_subscribed else 'Нет'
 
 
 admin.site.unregister(Group)

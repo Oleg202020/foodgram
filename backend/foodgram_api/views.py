@@ -39,7 +39,6 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django_filters.rest_framework import DjangoFilterBackend
-from foodgram_api.pagination import CustomPagination
 from foodgram_api.serializers import (CreateRecipeSerializer,
                                       IngredientSerializer,
                                       ListRecipeSerializer, RecipeSerializer,
