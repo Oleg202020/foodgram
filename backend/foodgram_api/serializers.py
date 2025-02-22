@@ -7,7 +7,7 @@
 работа с аватаром, редактирование пароля, подписки на других пользователей
 """
 from django.contrib.auth import get_user_model
-# from djoser.serializers import UserCreateSerializer, UserSerializer
+from django.db import transaction
 from drf_extra_fields.fields import Base64ImageField
 from foodgram_app.constants import MIN_AMOUNT
 from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
@@ -17,7 +17,9 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
 
 """
+flake8 всё перемешивает а без него на сервер не грузится
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers, status
@@ -224,20 +226,12 @@ class IngredientCreateRecipeSerializer(serializers.Serializer):
     Сериализатор промежуточной модели, связывающей рецепт и ингредиент
     и указывающей количество ингредиентов в рецепте.
     """
-    id = serializers.IntegerField()
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     amount = serializers.IntegerField(min_value=MIN_AMOUNT)
 
     class Meta:
         model = IngredientRecipe
         fields = ['id', 'amount']
-
-    def validate_amount(self, value):
-        """Проверка минимального количества ингредиентов"""
-        if value < MIN_AMOUNT:
-            raise serializers.ValidationError(
-                'Количество ингредиента должно быть больше 0.'
-            )
-        return value
 
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
@@ -272,62 +266,51 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         fields = ['id', 'ingredients', 'tags', 'image', 'name', 'author',
                   'text', 'cooking_time']
 
-    def tags_and_ingredients_set(self, recipe, tags, ingredients):
+    def validate_image(self, value):
         """
-        Привязывает к рецепту выбранные теги и ингредиенты.
-        Создаёт записи в промежуточной модели IngredientRecipe.
+        Вызывается ТОЛЬКО если поле 'image' указано в запросе.
+        - При создании (self.instance отсутствует) поле обязательно.
+        - При обновлении (self.instance есть) поле может не приходить совсем,
+          но если пришло пустым (Base64 = ""), кидаем 400.
         """
-        recipe.tags.set(tags)
-        IngredientRecipe.objects.bulk_create(
-            [IngredientRecipe(
-                recipe=recipe,
-                ingredient=Ingredient.objects.get(pk=ingredient['id']),
-                amount=ingredient['amount']
-            ) for ingredient in ingredients]
-        )
+        if not self.instance:
+            if not value:
+                raise serializers.ValidationError(
+                    ('Поле image обязательно при создании рецепта'
+                     'и не может быть пустым.')
+                )
+        else:
+            if not value:
+                raise serializers.ValidationError(
+                    'Нельзя передавать пустую картинку при обновлении.'
+                )
+        return value
 
     def validate(self, data):
         """
         Валидация полей (проверка ingredients, tags).
         Если ингредиентов нет или amount < 1, ---> 400 Bad Request.
         """
-        if not self.instance:
-            if not data.get('image'):
-                raise serializers.ValidationError(
-                    {'image': 'Нужно добавить файл с изображением.'})
-        else:
-            if 'image' in data:
-                if not data['image']:
-                    raise serializers.ValidationError(
-                        ({'image': 'Изображение обязательное поле.'
-                         'Загрузите новый файл.'})
-                    )
+        # При создании проверяем, что поле 'image' пришло.
+        # - При обновлении пропускаем, если 'image' нет. -> 400
+        if not self.instance and 'image' not in self.initial_data:
+            raise ValidationError(
+                {'image': 'Поле image обязательно при создании рецепта.'}
+            )
         ingredients = data.get('ingredients')
         if not ingredients:
             raise ValidationError(
                 {'ingredients':
                  'В рецепт надо добавить хотя бы один ингредиент.'}
             )
-        ingredients_list = []
-        for ingredient in ingredients:
-            if ingredient['amount'] < MIN_AMOUNT:
-                raise ValidationError(
-                    {'ingredients':
-                     'Количество каждого ингредиента должно быть >= 1.'}
-                )
-            ingredient_id = ingredient.get('id')
-            if not Ingredient.objects.filter(pk=ingredient_id).exists():
-                raise ValidationError(
-                    ({'ingredients': f'Ингредиента с id={ingredient_id}'
-                      'не существует.'})
-                )
-            if ingredient not in ingredients_list:
-                ingredients_list.append(ingredient)
-            else:
+        seen_ingredients = set()
+        for ingredient_data in ingredients:
+            ingredient_id = ingredient_data['id']
+            if ingredient_id in seen_ingredients:
                 raise ValidationError({
-                    'ingredients': 'Ингридиенты не могут повторяться!'
+                    'ingredients': 'Ингредиенты не могут повторяться!'
                 })
-        data['ingredients'] = ingredients
+            seen_ingredients.add(ingredient_id)
 
         tags = data.get('tags')
         if not tags:
@@ -339,46 +322,47 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         data['tags'] = tags
         return data
 
+    def create_ingredients(self, ingredients_data, recipe):
+        """Добавление ингредиентов в промежуточную таблицу IngredientRecipe."""
+        IngredientRecipe.objects.bulk_create([
+            IngredientRecipe(
+                recipe=recipe,
+                ingredient=ingredient_dict["id"],    # берём 'id'
+                amount=ingredient_dict["amount"]     # берём 'amount'
+            )
+            for ingredient_dict in ingredients_data
+        ])
+
+    @transaction.atomic
     def create(self, validated_data):
         """Создание нового рецепта с привязкой тегов и ингредиентов."""
         tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(
-            author=self.context['request'].user,
-            **validated_data
-        )
-        self.tags_and_ingredients_set(recipe, tags, ingredients)
+        ingredients_data = validated_data.pop('ingredients')
+        image = validated_data.pop('image', None)
+        validated_data['author'] = self.context['request'].user
+        recipe = Recipe.objects.create(image=image, **validated_data)
+        recipe.tags.set(tags)
+        self.create_ingredients(ingredients_data, recipe)
         return recipe
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         """
         Обновляет поля рецепта и заново привязывает ингредиенты и теги.
         """
         tags = validated_data.pop('tags', None)
-        ingredients = validated_data.pop('ingredients', None)
-        instance.image = validated_data.get('image', instance.image)
-        instance.name = validated_data.get('name', instance.name)
-        instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get('cooking_time',
-                                                   instance.cooking_time)
-        IngredientRecipe.objects.filter(recipe=instance).delete()
-        self.tags_and_ingredients_set(instance, tags, ingredients)
-
-        instance.save()
+        ingredients_data = validated_data.pop('ingredients', None)
+        instance = super().update(instance, validated_data)
+        if tags is not None:
+            instance.tags.set(tags)
+        if ingredients_data is not None:
+            # clear() да ManyToMany, но не работает
+            instance.ingredient_recipe.all().delete()
+            self.create_ingredients(ingredients_data, instance)
         return instance
 
-    def bulk_create_ingredients(self, ingredients, instance):
-        """Вспомогательный метод для заполнения IngredientRecipe."""
-        IngredientRecipe.objects.bulk_create([
-            IngredientRecipe(
-                recipe=instance,
-                ingredient=Ingredient.objects.get(pk=ingredient['id']),
-                amount=ingredient['amount']
-            )
-            for ingredient in ingredients
-        ])
-
     def to_representation(self, instance):
+        """Для отображения используем детализированный сериализатор."""
         return RecipeSerializer(instance, context=self.context).data
 
 
@@ -408,20 +392,19 @@ class RecipeSerializer(serializers.ModelSerializer):
         Проверяет, находится ли текущий рецепт в избранном у пользователя.
         Возвращает True/False.
         """
-        user = self.context['request'].user
-        if user.is_anonymous:
+        request = self.context.get('request')
+        if not request or request.user.is_anonymous:
             return False
-        return user.favorites.filter(recipe=obj).exists()
+        return request.user.favorite_recipes.filter(recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
         """
-        Проверяет, есть ли рецепт в корзине у пользователя.
-        Возвращает True/False.
+        Проверяем, есть ли рецепт в корзине.
         """
-        user = self.context['request'].user
-        if user.is_anonymous:
+        request = self.context.get('request')
+        if not request or request.user.is_anonymous:
             return False
-        return user.shoppingcarts.filter(recipe=obj).exists()
+        return request.user.shoppingcart_recipes.filter(recipe=obj).exists()
 
 
 class ListRecipeSerializer(serializers.ModelSerializer):

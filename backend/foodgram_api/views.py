@@ -1,5 +1,5 @@
-
 """
+flake8 всё перемешивает а без него на сервер не грузится
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -10,9 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-# from djoser.views import UserViewSet as DjoserUserViewSet
 
-# Локальные модули
 from foodgram_app.models import (
     Favorite, Ingredient, IngredientRecipe, Recipe, ShoppingCart, Tag
 )
@@ -401,7 +399,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         /api/recipes/download_shopping_cart/         GET
         """
         ingredients = (IngredientRecipe.objects
-                       .filter(recipe__shoppingcarts__user=request.user)
+                       .filter(recipe__shoppingcart_recipes__user=request.user)
                        .values('ingredient')
                        .annotate(total_amount=Sum('amount'))
                        .order_by('ingredient__name')

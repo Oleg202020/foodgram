@@ -66,7 +66,7 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         Ingredient,
         through='IngredientRecipe',
-        related_name='recipe_ingredient',
+        related_name='recipes',
         verbose_name='Ингридиенты рецепта')
     name = models.CharField(
         max_length=RECIPE_NAME_MAX_LENGTH,
@@ -200,6 +200,7 @@ class Favorite(UserRecipeRelation):
     чтобы не дублировать поля recipe и user.
     """
     class Meta(UserRecipeRelation.Meta):
+        default_related_name = 'favorite_recipes'
         verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
 
@@ -210,5 +211,6 @@ class ShoppingCart(UserRecipeRelation):
     чтобы не дублировать поля recipe и user.
     """
     class Meta(UserRecipeRelation.Meta):
+        default_related_name = 'shoppingcart_recipes'
         verbose_name = 'Рецепт в корзине'
         verbose_name_plural = 'Рецепты в корзине'
