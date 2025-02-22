@@ -2,7 +2,7 @@ from django.urls import include, path
 from foodgram_users.views import UserViewSet
 from rest_framework.routers import DefaultRouter
 
-from .views import (IngredientViewSet, RecipeViewSet, TagViewSet)
+from .views import IngredientViewSet, RecipeViewSet, TagViewSet
 
 router = DefaultRouter()
 

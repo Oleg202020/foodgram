@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 
-from .models import User, Follow
+from .models import Follow, User
 
 
 @admin.register(User)
@@ -10,7 +10,9 @@ class CustomUserAdmin(BaseUserAdmin):
     """
     Админ-модель для пользователей, даёт возможность
     редактировать пароли через админку, как у стандартной модели."""
-    list_display = ('id', 'username', 'email', 'first_name', 'last_name', 'is_staff')
+    list_display = ('id', 'username', 'email', 'first_name',
+                    'last_name', 'is_staff'
+                    )
     search_fields = ('username', 'email')
     ordering = ('username',)
 
