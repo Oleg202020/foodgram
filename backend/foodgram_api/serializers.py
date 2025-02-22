@@ -7,14 +7,177 @@
 работа с аватаром, редактирование пароля, подписки на других пользователей
 """
 from django.contrib.auth import get_user_model
+# from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from foodgram_app.constants import MIN_AMOUNT
 from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
-from foodgram_users.serializers import CorrectAndSeeUserSerializer
-from rest_framework import serializers
+from foodgram_users.models import Follow
+from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import SerializerMethodField
+
+"""
+from django.contrib.auth import get_user_model
+from djoser.serializers import UserCreateSerializer, UserSerializer
+from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.fields import SerializerMethodField
+
+from foodgram_app.constants import MIN_AMOUNT
+from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
+from foodgram_users.models import Follow
+"""
 
 User = get_user_model()
+
+
+class RegistrationUserSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для регистрации пользователя
+    Используемые адреса:
+        Регистрация пользователя   api/users/  POST
+    """
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'password',
+        ]
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
+
+
+class UserAvatarSerializer(serializers.ModelSerializer):
+    """Сериализатор для работы с аватаром."""
+    avatar = Base64ImageField(required=True)
+
+    class Meta:
+        model = User
+        fields = ('avatar', )
+
+    def validate(self, attrs):
+        if not attrs.get('avatar'):
+            raise serializers.ValidationError('Нет фото для аватара!')
+        return attrs
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для просмотра и редактирования данных пользователя.
+    Используемые адреса:
+        Получение списка пользователей   /users/         GET
+        Регистрация пользователя         /users/         POST
+        Профиль текущего пользователя    /users/me/      GET/PUT/PATCH
+        Отдельный пользователь           /users/{id}/    GET/PUT/PATCH/DELETE
+    """
+    is_subscribed = SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'avatar'
+        ]
+        read_only_fields = ('avatar',)
+
+    def get_is_subscribed(self, obj):
+        """Возвращает True если пользователь подписан на автора."""
+        request = self.context.get('request')
+        if not request or request.user.is_anonymous:
+            return False
+        return request.user.follower.filter(author=obj).exists()
+
+
+class FollowSerializer(UserDetailSerializer):
+    """Сериализатор для отображения информации о подписках."""
+    recipes = SerializerMethodField()
+    recipes_count = SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'is_subscribed',
+            'avatar',
+            'recipes_count',
+            'recipes'
+        ]
+
+    def get_recipes(self, obj):
+        """Возвращает сериализованные данные о рецептах автора.
+        Параметр recipes_limit использовуется, для ограничения
+        количества рецептов.
+        """
+        recipes_author = obj.recipe.all()
+        request = self.context.get('request')
+        if request is not None:
+            limit_param = request.query_params.get('recipes_limit')
+            if limit_param:
+                try:
+                    limit = int(limit_param)
+                    recipes_author = recipes_author[:limit]
+                except ValueError:
+                    pass
+        return ListRecipeSerializer(recipes_author, many=True,
+                                    context={'request': request}).data
+
+    def get_recipes_count(self, obj):
+        """Определяет количество рецептов автора на которого подписан"""
+        return obj.recipe.count()
+
+
+class SubscribeCreateSerializer(serializers.Serializer):
+    """
+    Сериализатор для создания подписки (POST).
+    Валидация попытки подписаться на себя или повторную подписку.
+    """
+    author_id = serializers.IntegerField()
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        user = request.user
+        author_id = attrs.get('author_id')
+        if user.pk == author_id:
+            raise ValidationError(
+                'Нельзя подписываться на себя.',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        author = User.objects.filter(pk=author_id).first()
+        if not author:
+            raise ValidationError(
+                'Пользователь не найден.',
+                code=status.HTTP_404_NOT_FOUND
+            )
+        if Follow.objects.filter(user=user, author=author).exists():
+            raise ValidationError(
+                'Вы уже подписаны на этого пользователя!',
+                code=status.HTTP_400_BAD_REQUEST
+            )
+        attrs['author'] = author
+        return attrs
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        author = validated_data['author']
+        return Follow.objects.create(user=user, author=author)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -101,7 +264,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True,
     )
-    author = CorrectAndSeeUserSerializer(read_only=True)
+    author = UserDetailSerializer(read_only=True)
     image = Base64ImageField(required=False, allow_null=False)
 
     class Meta:
@@ -226,7 +389,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     находится ли рецепт в избранном пользователя или в корзине.
     """
     tags = TagSerializer(read_only=True, many=True,)
-    author = CorrectAndSeeUserSerializer(read_only=True)
+    author = UserDetailSerializer(read_only=True)
     image = Base64ImageField(required=True)
     ingredients = IngredientRecipeSerializer(many=True, read_only=True,
                                              source='ingredient_recipe')

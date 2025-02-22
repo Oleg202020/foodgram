@@ -92,8 +92,8 @@ class Recipe(models.Model):
         verbose_name='Дата создания', auto_now_add=True)
     short_link = models.URLField(
         verbose_name='Короткая ссылка',
-        unique=True,
-        blank=True,)
+        unique=True
+    )
 
     class Meta:
         verbose_name = 'Рецепт'
@@ -186,10 +186,6 @@ class UserRecipeRelation(models.Model):
             models.UniqueConstraint(
                 fields=['recipe', 'user'],
                 name='%(app_label)s_%(class)s_unique'
-            ),
-            models.CheckConstraint(
-                name='%(app_label)s_%(class)s_prevent_self_rel',
-                check=~models.Q(recipe=models.F('user'))
             )
         ]
         ordering = ('recipe', 'user',)

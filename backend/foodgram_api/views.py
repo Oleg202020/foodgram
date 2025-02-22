@@ -1,13 +1,54 @@
+
+"""
+from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+# from djoser.views import UserViewSet as DjoserUserViewSet
+
+# Локальные модули
+from foodgram_app.models import (
+    Favorite, Ingredient, IngredientRecipe, Recipe, ShoppingCart, Tag
+)
+from foodgram_api.serializers import (
+    CreateRecipeSerializer,
+    IngredientSerializer,
+    ListRecipeSerializer,
+    RecipeSerializer,
+    TagSerializer
+)
+from .filters import IngredientFilter, TagFavCartFilter
+from .pagination import CustomPagination
+from .permissions import IsOwnerOrAdmin
+from foodgram_api.pagination import CustomPagination
+from foodgram_users.models import Follow
+from .serializers import (
+    UserDetailSerializer,
+    RegistrationUserSerializer,
+    UserAvatarSerializer,
+    SubscribeCreateSerializer,
+    FollowSerializer
+)
+"""
+from django.contrib.auth import get_user_model
+from django.db.models import Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django_filters.rest_framework import DjangoFilterBackend
+from foodgram_api.pagination import CustomPagination
 from foodgram_api.serializers import (CreateRecipeSerializer,
                                       IngredientSerializer,
                                       ListRecipeSerializer, RecipeSerializer,
                                       TagSerializer)
 from foodgram_app.models import (Favorite, Ingredient, IngredientRecipe,
                                  Recipe, ShoppingCart, Tag)
+from foodgram_users.models import Follow
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
@@ -17,6 +58,160 @@ from rest_framework.response import Response
 from .filters import IngredientFilter, TagFavCartFilter
 from .pagination import CustomPagination
 from .permissions import IsOwnerOrAdmin
+from .serializers import (FollowSerializer, RegistrationUserSerializer,
+                          SubscribeCreateSerializer, UserAvatarSerializer,
+                          UserDetailSerializer)
+
+"""
+Список пользователей                api/users/                 GET
+Регистрация пользователя            api/users/                 POST
+
+Профиль пользователя                api/users/{id}/            GET
+Текущий пользователь                api/users/me/              GET
+Добавление аватара                  api/users/me/avatar/       PUT
+Удаление аватара                    api/users/me/avatar/       DELET
+
+Изменение пароля                    api/users/set_password/    POST
+
+Получить токен авторизации          api/auth/token/login/      POST
+Удаление токена                     api/auth/token/logout/     POST
+
+Мои подписки                        api/users/subscriptions/   GET
+Подписаться на пользователя         api/users/{id}/subscribe/  POST
+Отписаться от пользователя          api/users/{id}/subscribe/  DELET
+"""
+
+User = get_user_model()
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    Вьюсет позволяет выполнять операции с пользователями, по
+    эндпоинтам:
+    Список пользователей               api/users/        GET
+    Профиль пользователя               api/users/{id}/   GET
+    Регистрация пользователя           api/users/        POST
+    Обновление данных пользователя     api/users/{id}/   PUT
+    Частичное обновление данных        api/users/{id}/   PATCH
+    Удаление пользователя              api/users/{id}/   DELETE
+
+    """
+    queryset = User.objects.all()
+    serializer_class = UserDetailSerializer
+    pagination_class = CustomPagination
+
+    def get_serializer_class(self):
+        """Определяет сериализатор для использования ViewSet
+         зависимости от action."""
+        if self.action in ('list', 'retrieve', 'partial_update', 'update'):
+            return UserDetailSerializer
+        return RegistrationUserSerializer
+
+    @action(detail=False, methods=['get'],
+            permission_classes=(IsAuthenticated,))
+    def me(self, request):
+        """Возвращает данные пользователя.
+        Используется для получения информации о пользователе, который
+        выполняет запрос. Доступно только авторизованным пользователям.
+        """
+        serializer = UserDetailSerializer(request.user,
+                                          context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        methods=['put', 'delete'],
+        permission_classes=[IsAuthenticated]
+    )
+    def avatar(self, request, **kwargs):
+        """Обновляет или удаляет аватар текущего пользователя."""
+        user = get_object_or_404(User, pk=request.user.id)
+        if request.method == 'PUT':
+            serializer = UserAvatarSerializer(
+                user,
+                data=request.data,
+                partial=True,
+                context={'request': request}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(
+                {'avatar': serializer.data.get('avatar')},
+                status=status.HTTP_200_OK
+            )
+        user.avatar.delete(save=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=False,
+        methods=['post'],
+        permission_classes=[IsAuthenticated]
+    )
+    def set_password(self, request):
+        """Позволяет менять пароль пользователю."""
+        old_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+        if not old_password or not new_password:
+            return Response(
+                {'error': 'Нужно передать текущий и новый пароль'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not request.user.check_password(old_password):
+            return Response(
+                {'error': 'Текущий пароль указан неверно.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        request.user.set_password(new_password)
+        request.user.save()
+        return Response({'detail': 'Пароль изменен'},
+                        status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=False,
+        permission_classes=[IsAuthenticated]
+    )
+    def subscriptions(self, request):
+        """
+         Возвращает список авторов, на которых подписан пользователь.
+        """
+        users = User.objects.filter(author__user=request.user)
+        paginated_queryset = self.paginate_queryset(users)
+        serializer = FollowSerializer(
+            paginated_queryset, many=True, context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[IsAuthenticated]
+    )
+    def subscribe(self, request, pk=None):
+        """Подписаться на автора."""
+        author = get_object_or_404(User, pk=pk)
+        data = {'author_id': author.id}
+        serializer = SubscribeCreateSerializer(data=data,
+                                               context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        author_serializer = FollowSerializer(author,
+                                             context={'request': request})
+        return Response(author_serializer.data, status=status.HTTP_201_CREATED)
+
+    @subscribe.mapping.delete
+    def unsubscribe(self, request, pk=None):
+        """Отписаться от автора."""
+        author = get_object_or_404(User, pk=pk)
+        follow = Follow.objects.filter(user=request.user,
+                                       author=author).first()
+        if not follow:
+            return Response(
+                {'error': 'Подписка не найдена.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        follow.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 """
 Cписок тегов                        api/tags/                           GET

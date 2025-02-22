@@ -1,9 +1,8 @@
 from django.urls import include, path
-from foodgram_users.views import UserViewSet
 from rest_framework.routers import DefaultRouter
 
 from .views import (IngredientViewSet, RecipeShortLinkView, RecipeViewSet,
-                    TagViewSet)
+                    TagViewSet, UserViewSet)
 
 router = DefaultRouter()
 

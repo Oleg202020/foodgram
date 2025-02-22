@@ -144,8 +144,8 @@ DJOSER = {
     'HIDE_USERS': False,     # Или True, если нужно скрывать эндпоинт "Все пользователи"
     'LOGIN_FIELD': 'email',  # Используем e-mail как логин
     'SERIALIZERS': {
-        'user': 'foodgram_users.serializers.CorrectAndSeeUserSerializer',
-        'current_user': 'foodgram_users.serializers.CorrectAndSeeUserSerializer',
+        'user': 'foodgram_api.serializers.UserDetailSerializer',
+        'current_user': 'foodgram_api.serializers.UserDetailSerializer',
     },
     'PERMISSIONS': {
         'user': ['rest_framework.permissions.AllowAny'],
