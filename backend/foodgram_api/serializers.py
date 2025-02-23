@@ -11,10 +11,10 @@ from drf_extra_fields.fields import Base64ImageField
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
-from rest_framework import serializers, status
-from rest_framework.validators import UniqueTogetherValidator
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
+from rest_framework.validators import UniqueTogetherValidator
 
 from foodgram_app.constants import MIN_AMOUNT
 from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
