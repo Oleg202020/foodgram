@@ -1,63 +1,43 @@
-"""
-flake8 всё перемешивает а без него на сервер не грузится
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
+
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from foodgram_app.models import (
-    Favorite, Ingredient, IngredientRecipe, Recipe, ShoppingCart, Tag
-)
 from foodgram_api.serializers import (
     CreateRecipeSerializer,
     IngredientSerializer,
     ListRecipeSerializer,
     RecipeSerializer,
-    TagSerializer
+    TagSerializer,
 )
-from .filters import IngredientFilter, TagFavCartFilter
-from .pagination import CustomPagination
-from .permissions import IsOwnerOrAdmin
-from foodgram_api.pagination import CustomPagination
-from foodgram_users.models import Follow
-from .serializers import (
-    UserDetailSerializer,
-    RegistrationUserSerializer,
-    UserAvatarSerializer,
-    SubscribeCreateSerializer,
-    FollowSerializer
+from foodgram_app.models import (
+    Favorite,
+    Ingredient,
+    IngredientRecipe,
+    Recipe,
+    ShoppingCart,
+    Tag,
 )
-"""
-from django.contrib.auth import get_user_model
-from django.db.models import Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
-from django_filters.rest_framework import DjangoFilterBackend
-from foodgram_api.serializers import (CreateRecipeSerializer,
-                                      IngredientSerializer,
-                                      ListRecipeSerializer, RecipeSerializer,
-                                      TagSerializer)
-from foodgram_app.models import (Favorite, Ingredient, IngredientRecipe,
-                                 Recipe, ShoppingCart, Tag)
 from foodgram_users.models import Follow
-from rest_framework import generics, status, viewsets
-from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
 
 from .filters import IngredientFilter, TagFavCartFilter
 from .pagination import CustomPagination
 from .permissions import IsOwnerOrAdmin
-from .serializers import (FollowSerializer, RegistrationUserSerializer,
-                          SubscribeCreateSerializer, UserAvatarSerializer,
-                          UserDetailSerializer)
+from .serializers import (
+    FollowSerializer,
+    RegistrationUserSerializer,
+    SubscribeCreateSerializer,
+    UserAvatarSerializer,
+    UserDetailSerializer,
+)
 
 """
 Список пользователей                api/users/                 GET
@@ -199,14 +179,13 @@ class UserViewSet(viewsets.ModelViewSet):
     def unsubscribe(self, request, pk=None):
         """Отписаться от автора."""
         author = get_object_or_404(User, pk=pk)
-        follow = Follow.objects.filter(user=request.user,
-                                       author=author).first()
-        if not follow:
+        deleted_count, _ = Follow.objects.filter(user=request.user,
+                                                 author=author).delete()
+        if deleted_count == 0:
             return Response(
                 {'error': 'Подписка не найдена.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        follow.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -241,18 +220,6 @@ def recipe_short_redirect_view(request, short_link):
               name='recipe_short_link'),
     мне больше класс нравится
 '''
-
-
-class RecipeShortLinkView(generics.GenericAPIView):
-    """ Позволяет открыть рецепт по короткой ссылке:
-    https://foodgramlar.viewdns.net/s/<short_link>
-    Позволяет перейти на рецепт по короткой ссылке `/s/<short_link>/`.
-    Редирект на полноценную страницу рецепта во фронтенде.
-    """
-    def get(self, request, short_link):
-        recipe = get_object_or_404(Recipe, short_link=short_link)
-        frontend_url = f"/recipes/{recipe.id}/"
-        return redirect(frontend_url)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -303,8 +270,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         /api/recipes/{id}/get-link/          GET
         """
         recipe = get_object_or_404(Recipe, pk=pk)
-        short_domain = "https://foodgramlar.viewdns.net/s"
-        short_url = f"{short_domain}/{recipe.short_link}"
+        short_url = f"{settings.SHORT_DOMAIN}/s/{recipe.short_link}"
         return Response({'short-link': short_url}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'],

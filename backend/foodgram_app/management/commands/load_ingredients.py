@@ -1,6 +1,7 @@
 import csv
 
 from django.core.management import BaseCommand
+
 from foodgram_app.models import Ingredient
 
 
@@ -11,10 +12,13 @@ class Command(BaseCommand):
             encoding='utf-8'
         ) as csv_file:
             load_csv_readed = csv.reader(csv_file)
+            ingredients = []
             for row in load_csv_readed:
-                Ingredient.objects.update_or_create(  # чтобы не делать дублей
-                    name=row[0].strip(),
-                    measurement_unit=row[1].strip()
+                ingredients.append(
+                    Ingredient(
+                        name=row[0].strip(),
+                        measurement_unit=row[1].strip()
+                    )
                 )
-        self.stdout.write(
-            self.style.SUCCESS('Ингредиентов загружены.'))
+        Ingredient.objects.bulk_create(ingredients, ignore_conflicts=True)
+        self.stdout.write(self.style.SUCCESS('Ингредиенты загружены.'))

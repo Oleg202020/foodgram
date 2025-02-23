@@ -8,11 +8,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
-DEBUG = os.getenv('DEBUG', 'False')
+DEBUG = True
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(', ')
+ALLOWED_HOSTS = ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'foodgramlar.viewdns.net']
 
-USE_SQL = False
+USE_SQLITE = os.environ.get('USE_SQLITE', 'True').lower() in ('true', '1', 'yes')
 
 # Application definition
 
@@ -67,7 +67,7 @@ WSGI_APPLICATION = 'foodgram_main.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-if USE_SQL:
+if USE_SQLITE:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -141,7 +141,7 @@ MEDIA_ROOT = '/media'
 
 # Настройки Djoser
 DJOSER = {
-    'HIDE_USERS': False,     # Или True, если нужно скрывать эндпоинт "Все пользователи"
+    'HIDE_USERS': True,     # Или True, если нужно скрывать эндпоинт "Все пользователи"
     'LOGIN_FIELD': 'email',  # Используем e-mail как логин
     'SERIALIZERS': {
         'user': 'foodgram_api.serializers.UserDetailSerializer',
@@ -159,3 +159,4 @@ DJOSER = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 PAGE_SIZE_DEFAULT = 6
+SHORT_DOMAIN = "https://foodgramlar.viewdns.net"

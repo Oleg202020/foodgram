@@ -6,22 +6,11 @@
 все сериализаторы с пользователем содержатся в foodgram_users:
 работа с аватаром, редактирование пароля, подписки на других пользователей
 """
-from django.contrib.auth import get_user_model
-from django.db import transaction
 from drf_extra_fields.fields import Base64ImageField
-from foodgram_app.constants import MIN_AMOUNT
-from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
-from foodgram_users.models import Follow
-from rest_framework import serializers, status
-from rest_framework.exceptions import ValidationError
-from rest_framework.fields import SerializerMethodField
 
-"""
-flake8 всё перемешивает а без него на сервер не грузится
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from djoser.serializers import UserCreateSerializer, UserSerializer
-from drf_extra_fields.fields import Base64ImageField
+
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
@@ -29,7 +18,6 @@ from rest_framework.fields import SerializerMethodField
 from foodgram_app.constants import MIN_AMOUNT
 from foodgram_app.models import Ingredient, IngredientRecipe, Recipe, Tag
 from foodgram_users.models import Follow
-"""
 
 User = get_user_model()
 
@@ -99,9 +87,11 @@ class UserDetailSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         """Возвращает True если пользователь подписан на автора."""
         request = self.context.get('request')
-        if not request or request.user.is_anonymous:
-            return False
-        return request.user.follower.filter(author=obj).exists()
+        return (
+            request
+            and not request.user.is_anonymous
+            and request.user.follower.filter(author=obj).exists()
+        )
 
 
 class FollowSerializer(UserDetailSerializer):
@@ -353,12 +343,10 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags', None)
         ingredients_data = validated_data.pop('ingredients', None)
         instance = super().update(instance, validated_data)
-        if tags is not None:
-            instance.tags.set(tags)
-        if ingredients_data is not None:
-            # clear() да ManyToMany, но не работает
-            instance.ingredient_recipe.all().delete()
-            self.create_ingredients(ingredients_data, instance)
+        instance.tags.set(tags)
+        # clear() да ManyToMany, но не работает
+        instance.ingredient_recipe.all().delete()
+        self.create_ingredients(ingredients_data, instance)
         return instance
 
     def to_representation(self, instance):

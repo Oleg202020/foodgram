@@ -7,7 +7,7 @@ from .models import Follow, User
 
 
 @admin.register(User)
-class CustomUserAdmin(BaseUserAdmin):
+class FoodgramUserAdmin(BaseUserAdmin):
     """
     Админ-модель для пользователей, даёт возможность
     редактировать пароли через админку, как у стандартной модели."""

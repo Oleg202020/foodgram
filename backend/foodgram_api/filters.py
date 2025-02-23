@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
+
 from django_filters import FilterSet
 from django_filters.rest_framework import filters
+
 from foodgram_app.models import Ingredient, Recipe, Tag
 
 User = get_user_model()
@@ -27,7 +29,6 @@ class TagFavCartFilter(FilterSet):
         field_name='tags__slug',
         to_field_name='slug',
         queryset=Tag.objects.all())
-    author = filters.ModelChoiceFilter(queryset=User.objects.all())
 
     def filter_is_favorited(self, queryset, name, value):
         """Фильтрует избранные рецепты."""
@@ -45,4 +46,4 @@ class TagFavCartFilter(FilterSet):
 
     class Meta:
         model = Recipe
-        fields = ['tags', 'author', 'is_in_shopping_cart']
+        fields = ['tags', 'author', 'is_favorited', 'is_in_shopping_cart']
