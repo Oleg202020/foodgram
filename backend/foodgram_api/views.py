@@ -11,7 +11,7 @@ from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from foodgram_api.serializers import (
+from .serializers import (
     CreateRecipeSerializer,
     IngredientSerializer,
     ListRecipeSerializer,

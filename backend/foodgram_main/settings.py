@@ -3,16 +3,21 @@ import os
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', default=False) in ('True',)
+print(DEBUG)
 
-ALLOWED_HOSTS = ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'foodgramlar.viewdns.net']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',')
 
 USE_SQLITE = os.environ.get('USE_SQLITE', 'False').lower() in ('true', '1', 'yes')
+print(USE_SQLITE)
 
 # Application definition
 
@@ -23,9 +28,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'foodgram_api.apps.FoodgramApiConfig',
-    'foodgram_app.apps.FoodgramAppConfig',
-    'foodgram_users.apps.FoodgramUsersConfig',
+
+    'foodgram_api',
+    'foodgram_app',
+    'foodgram_users',
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
