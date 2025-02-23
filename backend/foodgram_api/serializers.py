@@ -258,22 +258,14 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
 
     def validate_image(self, value):
         """
-        Вызывается ТОЛЬКО если поле 'image' указано в запросе.
-        - При создании (self.instance отсутствует) поле обязательно.
+        Метод вызывается ТОЛЬКО, если поле 'image' присутствует в запросе.
         - При обновлении (self.instance есть) поле может не приходить совсем,
           но если пришло пустым (Base64 = ""), кидаем 400.
         """
-        if not self.instance:
-            if not value:
-                raise serializers.ValidationError(
-                    ('Поле image обязательно при создании рецепта'
-                     'и не может быть пустым.')
-                )
-        else:
-            if not value:
-                raise serializers.ValidationError(
-                    'Нельзя передавать пустую картинку при обновлении.'
-                )
+        if not value:
+            raise serializers.ValidationError(
+                'Нельзя передавать пустую картинку при обновлении.'
+            )
         return value
 
     def validate(self, data):
@@ -281,8 +273,8 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         Валидация полей (проверка ingredients, tags).
         Если ингредиентов нет или amount < 1, ---> 400 Bad Request.
         """
-        # При создании проверяем, что поле 'image' пришло.
-        # - При обновлении пропускаем, если 'image' нет. -> 400
+        # Если убрать это условие отсюда то не будет проверки на пустое поле
+        # Если image вообще не пришло, метод validate_image не вызовется
         if not self.instance and 'image' not in self.initial_data:
             raise ValidationError(
                 {'image': 'Поле image обязательно при создании рецепта.'}
@@ -345,7 +337,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
         instance.tags.set(tags)
         # clear() да ManyToMany, но не работает
-        instance.ingredient_recipe.all().delete()
+        instance.ingredients.clear()
         self.create_ingredients(ingredients_data, instance)
         return instance
 
@@ -377,22 +369,26 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, obj):
         """
-        Проверяет, находится ли текущий рецепт в избранном у пользователя.
+        Проверяет, есть ли рецепт в избранном у пользователя.
         Возвращает True/False.
         """
         request = self.context.get('request')
-        if not request or request.user.is_anonymous:
-            return False
-        return request.user.favorite_recipes.filter(recipe=obj).exists()
+        return (
+            request
+            and not request.user.is_anonymous
+            and request.user.favorite_recipes.filter(recipe=obj).exists()
+        )
 
     def get_is_in_shopping_cart(self, obj):
         """
         Проверяем, есть ли рецепт в корзине.
         """
         request = self.context.get('request')
-        if not request or request.user.is_anonymous:
-            return False
-        return request.user.shoppingcart_recipes.filter(recipe=obj).exists()
+        return (
+            request
+            and not request.user.is_anonymous
+            and request.user.shoppingcart_recipes.filter(recipe=obj).exists()
+        )
 
 
 class ListRecipeSerializer(serializers.ModelSerializer):
