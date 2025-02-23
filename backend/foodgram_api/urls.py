@@ -4,7 +4,10 @@ from rest_framework.routers import DefaultRouter
 
 from foodgram_app.models import RecipeShortLinkView
 
-from .views import FudgramUserViewSet, IngredientViewSet, RecipeViewSet, TagViewSet
+from .views import (FudgramUserViewSet,
+                    IngredientViewSet,
+                    RecipeViewSet,
+                    TagViewSet)
 
 router = DefaultRouter()
 

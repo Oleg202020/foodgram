@@ -84,9 +84,6 @@ class FudgramUserViewSet(UserViewSet):
         Используется для получения информации о пользователе, который
         выполняет запрос. Доступно только авторизованным пользователям.
         """
-        """serializer = UserDetailSerializer(request.user,
-                                          context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)"""
         return super().me(request)
 
     @action(
