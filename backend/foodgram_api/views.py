@@ -166,7 +166,10 @@ class UserViewSet(viewsets.ModelViewSet):
     def subscribe(self, request, pk=None):
         """Подписаться на автора."""
         author = get_object_or_404(User, pk=pk)
-        data = {'author_id': author.id}
+        data = {
+            'user': request.user.id,
+            'author': author.id
+        }
         serializer = SubscribeCreateSerializer(data=data,
                                                context={'request': request})
         serializer.is_valid(raise_exception=True)

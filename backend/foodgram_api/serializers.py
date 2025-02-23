@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 
 from rest_framework import serializers, status
+from rest_framework.validators import UniqueTogetherValidator
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
 
@@ -136,40 +137,35 @@ class FollowSerializer(UserDetailSerializer):
         return obj.recipe.count()
 
 
-class SubscribeCreateSerializer(serializers.Serializer):
+class SubscribeCreateSerializer(serializers.ModelSerializer):
     """
     Сериализатор для создания подписки (POST).
     Валидация попытки подписаться на себя или повторную подписку.
     """
-    author_id = serializers.IntegerField()
 
-    def validate(self, attrs):
-        request = self.context.get('request')
-        user = request.user
-        author_id = attrs.get('author_id')
-        if user.pk == author_id:
-            raise ValidationError(
-                'Нельзя подписываться на себя.',
-                code=status.HTTP_400_BAD_REQUEST
+    class Meta:
+        model = Follow
+        fields = ('user', 'author')
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Follow.objects.all(),
+                fields=('user', 'author'),
+                message='Вы уже подписаны на этого пользователя!'
             )
-        author = User.objects.filter(pk=author_id).first()
-        if not author:
-            raise ValidationError(
-                'Пользователь не найден.',
-                code=status.HTTP_404_NOT_FOUND
-            )
-        if Follow.objects.filter(user=user, author=author).exists():
-            raise ValidationError(
-                'Вы уже подписаны на этого пользователя!',
-                code=status.HTTP_400_BAD_REQUEST
-            )
-        attrs['author'] = author
-        return attrs
+        ]
+
+    def validate_author(self, value):
+        """Запрещает подписываться на самого себя."""
+        user = self.context['request'].user
+        if user == value:
+            raise ValidationError('Нельзя подписываться на себя.')
+        return value
 
     def create(self, validated_data):
-        user = self.context['request'].user
-        author = validated_data['author']
-        return Follow.objects.create(user=user, author=author)
+        """
+        Создаём запись в модели Follow.
+        """
+        return Follow.objects.create(**validated_data)
 
 
 class TagSerializer(serializers.ModelSerializer):
