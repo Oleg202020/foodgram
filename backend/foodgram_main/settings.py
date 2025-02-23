@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False')
 
 ALLOWED_HOSTS = ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'foodgramlar.viewdns.net']
 
@@ -113,6 +113,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'foodgram_api.pagination.CustomPagination',
+    'PAGE_SIZE': 6,
 }
 
 
@@ -148,8 +150,10 @@ DJOSER = {
         'current_user': 'foodgram_api.serializers.UserDetailSerializer',
     },
     'PERMISSIONS': {
-        'user': ['rest_framework.permissions.AllowAny'],
+        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
         'user_list': ['rest_framework.permissions.AllowAny'],
+        'set_password': ['rest_framework.permissions.IsAuthenticated'],
+        'me': {'rest_framework.permissions.IsAuthenticated'}
     },
 }
 

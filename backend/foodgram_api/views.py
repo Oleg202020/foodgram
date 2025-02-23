@@ -1,3 +1,5 @@
+from djoser.views import UserViewSet
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
@@ -33,10 +35,8 @@ from .pagination import CustomPagination
 from .permissions import IsOwnerOrAdmin
 from .serializers import (
     FollowSerializer,
-    RegistrationUserSerializer,
     SubscribeCreateSerializer,
     UserAvatarSerializer,
-    UserDetailSerializer,
 )
 
 """
@@ -61,7 +61,7 @@ from .serializers import (
 User = get_user_model()
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class FudgramUserViewSet(UserViewSet):
     """
     Вьюсет позволяет выполнять операции с пользователями, по
     эндпоинтам:
@@ -74,15 +74,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
     """
     queryset = User.objects.all()
-    serializer_class = UserDetailSerializer
     pagination_class = CustomPagination
-
-    def get_serializer_class(self):
-        """Определяет сериализатор для использования ViewSet
-         зависимости от action."""
-        if self.action in ('list', 'retrieve', 'partial_update', 'update'):
-            return UserDetailSerializer
-        return RegistrationUserSerializer
+    lookup_field = "id"
 
     @action(detail=False, methods=['get'],
             permission_classes=(IsAuthenticated,))
@@ -91,9 +84,10 @@ class UserViewSet(viewsets.ModelViewSet):
         Используется для получения информации о пользователе, который
         выполняет запрос. Доступно только авторизованным пользователям.
         """
-        serializer = UserDetailSerializer(request.user,
+        """serializer = UserDetailSerializer(request.user,
                                           context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)"""
+        return super().me(request)
 
     @action(
         detail=True,
@@ -121,30 +115,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False,
-        methods=['post'],
-        permission_classes=[IsAuthenticated]
-    )
-    def set_password(self, request):
-        """Позволяет менять пароль пользователю."""
-        old_password = request.data.get('current_password')
-        new_password = request.data.get('new_password')
-        if not old_password or not new_password:
-            return Response(
-                {'error': 'Нужно передать текущий и новый пароль'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if not request.user.check_password(old_password):
-            return Response(
-                {'error': 'Текущий пароль указан неверно.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        request.user.set_password(new_password)
-        request.user.save()
-        return Response({'detail': 'Пароль изменен'},
-                        status=status.HTTP_204_NO_CONTENT)
-
-    @action(
-        detail=False,
         permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
@@ -163,9 +133,9 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=['post'],
         permission_classes=[IsAuthenticated]
     )
-    def subscribe(self, request, pk=None):
+    def subscribe(self, request, id=None):
         """Подписаться на автора."""
-        author = get_object_or_404(User, pk=pk)
+        author = get_object_or_404(User, id=id)
         data = {
             'user': request.user.id,
             'author': author.id
@@ -179,9 +149,9 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(author_serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def unsubscribe(self, request, pk=None):
+    def unsubscribe(self, request, id=None):
         """Отписаться от автора."""
-        author = get_object_or_404(User, pk=pk)
+        author = get_object_or_404(User, id=id)
         deleted_count, _ = Follow.objects.filter(user=request.user,
                                                  author=author).delete()
         if deleted_count == 0:
