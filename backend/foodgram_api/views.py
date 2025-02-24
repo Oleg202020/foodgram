@@ -128,9 +128,9 @@ class FudgramUserViewSet(UserViewSet):
         methods=['post'],
         permission_classes=[IsAuthenticated]
     )
-    def subscribe(self, request, id=None):
+    def subscribe(self, request, id):
         """Подписаться на автора."""
-        author = get_object_or_404(User, id=id)
+        author = get_object_or_404(User, pk=id)
         data = {
             'user': request.user.id,
             'author': author.id
@@ -144,9 +144,9 @@ class FudgramUserViewSet(UserViewSet):
         return Response(author_serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def unsubscribe(self, request, id=None):
+    def unsubscribe(self, request, id):
         """Отписаться от автора."""
-        author = get_object_or_404(User, id=id)
+        author = get_object_or_404(User, pk=id)
         deleted_count, _ = Follow.objects.filter(user=request.user,
                                                  author=author).delete()
         if deleted_count == 0:
