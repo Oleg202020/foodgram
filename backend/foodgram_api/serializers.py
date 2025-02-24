@@ -10,7 +10,6 @@ from drf_extra_fields.fields import Base64ImageField
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
@@ -316,9 +315,8 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         """Создание нового рецепта с привязкой тегов и ингредиентов."""
         tags = validated_data.pop('tags')
         ingredients_data = validated_data.pop('ingredients')
-        image = validated_data.pop('image', None)
         validated_data['author'] = self.context['request'].user
-        recipe = Recipe.objects.create(image=image, **validated_data)
+        recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
         self.create_ingredients(ingredients_data, recipe)
         return recipe
@@ -332,7 +330,6 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         ingredients_data = validated_data.pop('ingredients', None)
         instance = super().update(instance, validated_data)
         instance.tags.set(tags)
-        # clear() да ManyToMany, но не работает
         instance.ingredients.clear()
         self.create_ingredients(ingredients_data, instance)
         return instance

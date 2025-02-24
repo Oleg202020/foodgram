@@ -1,8 +1,5 @@
 from django.urls import include, path
-
 from rest_framework.routers import DefaultRouter
-
-from foodgram_app.models import RecipeShortLinkView
 
 from .views import (
     FudgramUserViewSet,
@@ -22,6 +19,4 @@ router.register('users', FudgramUserViewSet, basename='users')
 urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include('djoser.urls.authtoken')),
-    path('<str:short_link>/',
-         RecipeShortLinkView.as_view(), name='recipe_short_link'),
 ]

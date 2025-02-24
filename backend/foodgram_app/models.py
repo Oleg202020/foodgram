@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.shortcuts import redirect
-
 from rest_framework import generics
 
 from .constants import (
