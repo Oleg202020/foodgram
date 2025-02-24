@@ -5,8 +5,6 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.shortcuts import redirect
-from rest_framework import generics
 
 from .constants import (
     INGR_MAX_LENGTH,
@@ -20,20 +18,6 @@ from .constants import (
 )
 
 User = get_user_model()
-
-
-class RecipeShortLinkView(generics.GenericAPIView):
-    """ Позволяет открыть рецепт по короткой ссылке:
-    https://foodgramlar.viewdns.net/s/<short_link>
-    Позволяет перейти на рецепт по короткой ссылке `/s/<short_link>/`.
-    """
-    def get(self, request, short_link):
-        try:
-            recipe = Recipe.objects.get(short_link=short_link)
-        except Recipe.DoesNotExist:
-            return redirect('/404')
-        frontend_url = f"/recipes/{recipe.id}/"
-        return redirect(frontend_url)
 
 
 class Tag(models.Model):

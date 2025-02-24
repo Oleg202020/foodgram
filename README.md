@@ -26,11 +26,12 @@ Foodgram
 Развертывание проекта с помощью Docker
 
     1 Клонировать репозиторий:
+    '''    
     git clone https://github.com/Oleg202020/foodgram.git
     cd foodgram
-
+    '''
     2 Создать и заполнить файл окружения .env в корне проекта:
-
+    '''
     SECRET_KEY=<секретный ключ Django>
     DB_ENGINE=django.db.backends.postgresql
     DB_NAME=<имя базы данных>
@@ -38,9 +39,9 @@ Foodgram
     POSTGRES_PASSWORD=<пароль к БД>
     DB_HOST=db
     DB_PORT=5432
-
+    '''
     Пример (не используйте эти данные на продакшене!):
-
+    '''
     SECRET_KEY=some-very-secret-key
     DB_ENGINE=django.db.backends.postgresql
     DB_NAME=foodgram
@@ -48,22 +49,23 @@ Foodgram
     POSTGRES_PASSWORD=postgres
     DB_HOST=db
     DB_PORT=5432
+    '''
 
     3 Запустить docker-compose:
 
-    docker-compose up -d
+    'docker-compose up -d'
     Команда поднимет несколько контейнеров (db, backend, frontend, gateway и т.п. — в зависимости от вашей конфигурации).
 
     4 Выполнить миграции, собрать статику и (опционально) создать суперпользователя:
 
     # применяем миграции
-    docker-compose exec backend python manage.py migrate
+    'docker-compose exec backend python manage.py migrate'
 
     # собираем статику
-    docker-compose exec backend python manage.py collectstatic --noinput
+    'docker-compose exec backend python manage.py collectstatic --noinput'
 
     # создаем суперпользователя
-    docker-compose exec backend python manage.py createsuperuser
+    'docker-compose exec backend python manage.py createsuperuser'
 
     5. Проверить, что проект запущен
 
@@ -76,18 +78,18 @@ Foodgram
     Если вы хотите запустить Django-приложение напрямую:
 
     1. Установите зависимости:
-    pip install -r requirements.txt
+    'pip install -r requirements.txt'
 
     2 Создайте базу данных PostgreSQL или используйте SQLite (изменив настройки в settings.py).
 
     3 Выполните миграции:
-    python manage.py migrate
+    'python manage.py migrate'
 
     4. Cоберите статические файлы:
-    python manage.py collectstatic --noinput
+    'python manage.py collectstatic --noinput'
 
     5. Запустите локальный сервер разработки:
-    python manage.py runserver
+    'python manage.py runserver'
 
     По умолчанию приложение будет доступно по адресу http://127.0.0.1:8000/.
 
