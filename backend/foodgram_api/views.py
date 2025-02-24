@@ -178,17 +178,6 @@ Cписок тегов                        api/tags/                         
 Удалить рецепт из избранного        api/recipes/{id}/favorite/          DELETE
 """
 
-'''
-# Или клас или функия
-def recipe_short_redirect_view(request, short_link):
-    """Находит рецепт по short_link и редиректит на /recipes/<id>/."""
-    recipe = get_object_or_404(Recipe, short_link=short_link)
-    return redirect(f"/recipes/{recipe.id}/")
-в урле:  path('<str:short_link>/', recipe_short_redirect_view,
-              name='recipe_short_link'),
-    мне больше класс нравится
-'''
-
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """
