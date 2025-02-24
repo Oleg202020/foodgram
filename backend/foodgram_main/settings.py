@@ -8,12 +8,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
-DEBUG = True  # os.getenv('DEBUG', default=False) in ('True',)
+DEBUG = os.getenv('DEBUG', default=False) in ('True',)
 print(DEBUG)
 
-ALLOWED_HOSTS = ['158.160.12.176', '127.0.0.1', 'localhost', 'foodgramlar.viewdns.net']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(', ')
 
-USE_SQLITE = False  # os.environ.get('USE_SQLITE', 'False').lower() in ('true', '1', 'yes')
+USE_SQLITE = os.environ.get('USE_SQLITE', 'False').lower() in ('true', '1', 'yes')
+print(USE_SQLITE)
 
 # Application definition
 
