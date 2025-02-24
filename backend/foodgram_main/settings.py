@@ -10,7 +10,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
 DEBUG = os.getenv('DEBUG', default=False) in ('True',)
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(', ')
+ALLOWED_HOSTS = ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(', ')
 
 USE_SQLITE = os.environ.get('USE_SQLITE', 'False').lower() in ('true', '1', 'yes')
 

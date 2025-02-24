@@ -116,7 +116,7 @@ class FudgramUserViewSet(UserViewSet):
         """
          Возвращает список авторов, на которых подписан пользователь.
         """
-        users = User.objects.filter(author__user=request.user)
+        users = User.objects.filter(followers__user=request.user)
         paginated_queryset = self.paginate_queryset(users)
         serializer = FollowSerializer(
             paginated_queryset, many=True, context={'request': request}
@@ -128,7 +128,7 @@ class FudgramUserViewSet(UserViewSet):
         methods=['post'],
         permission_classes=[IsAuthenticated]
     )
-    def subscribe(self, request, id):
+    def subscribe(self, request, id=None):
         """Подписаться на автора."""
         author = get_object_or_404(User, pk=id)
         data = {
@@ -144,7 +144,7 @@ class FudgramUserViewSet(UserViewSet):
         return Response(author_serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def unsubscribe(self, request, id):
+    def unsubscribe(self, request, id=None):
         """Отписаться от автора."""
         author = get_object_or_404(User, pk=id)
         deleted_count, _ = Follow.objects.filter(user=request.user,

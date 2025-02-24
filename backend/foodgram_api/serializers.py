@@ -90,7 +90,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
         return (
             request
             and not request.user.is_anonymous
-            and request.user.follower.filter(author=obj).exists()
+            and request.user.subscriptions.filter(author=obj).exists()
         )
 
 
@@ -118,7 +118,7 @@ class FollowSerializer(UserDetailSerializer):
         Параметр recipes_limit использовуется, для ограничения
         количества рецептов.
         """
-        recipes_author = obj.recipe.all()
+        recipes_author = obj.recipes.all()
         request = self.context.get('request')
         if request is not None:
             limit_param = request.query_params.get('recipes_limit')
@@ -133,7 +133,7 @@ class FollowSerializer(UserDetailSerializer):
 
     def get_recipes_count(self, obj):
         """Определяет количество рецептов автора на которого подписан"""
-        return obj.recipe.count()
+        return obj.recipes.count()
 
 
 class SubscribeCreateSerializer(serializers.ModelSerializer):
