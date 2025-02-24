@@ -1,6 +1,6 @@
 from django.urls import path
 
-from foodgram_app.models import RecipeShortLinkView
+from foodgram_app.views import RecipeShortLinkView
 
 urlpatterns = [
     path('<str:short_link>/',
