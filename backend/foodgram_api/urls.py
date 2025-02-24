@@ -21,6 +21,4 @@ router.register('users', FudgramUserViewSet, basename='users')
 urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include('djoser.urls.authtoken')),
-    path('<str:short_link>/',
-         RecipeShortLinkView.as_view(), name='recipe_short_link'),
 ]
